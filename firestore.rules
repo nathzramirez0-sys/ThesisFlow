@@ -1,0 +1,186 @@
+rules_version = '2';
+
+// Access model: a user reads and writes only their own profile, and only data
+// under groups whose `memberIds` include them. Writes that clients must never
+// make directly (joining, invite codes, deleting a group) go through Cloud
+// Functions, which use the Admin SDK and bypass these rules.
+//
+// Field limits match domain/validation/Validators.kt.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function groupPath(groupId) {
+      return /databases/$(database)/documents/groups/$(groupId);
+    }
+
+    function isMember(groupId) {
+      return signedIn() && request.auth.uid in get(groupPath(groupId)).data.memberIds;
+    }
+
+    function isLeader(groupId) {
+      return signedIn() && get(groupPath(groupId)).data.roles.get(request.auth.uid, null) == 'leader';
+    }
+
+    function isText(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max;
+    }
+
+    function isOptionalText(value, max) {
+      return value == null || isText(value, 0, max);
+    }
+
+    function isOptionalTimestamp(value) {
+      return value == null || value is timestamp;
+    }
+
+    // ---------------------------------------------------------------- users
+
+    match /users/{uid} {
+      allow read: if isSelf(uid);
+      allow create: if isSelf(uid) && validNewUser();
+      allow update: if isSelf(uid) && validUserUpdate();
+      allow delete: if false;
+
+      function validUserFields(data) {
+        return isText(data.displayName, 0, 50)
+          && isText(data.course, 0, 80)
+          && isText(data.school, 0, 100)
+          && isOptionalText(data.photoUrl, 2048)
+          && data.onboardingComplete is bool;
+      }
+
+      function validNewUser() {
+        let data = request.resource.data;
+        return data.keys().hasOnly([
+            'email', 'displayName', 'photoUrl', 'course', 'school',
+            'onboardingComplete', 'createdAt', 'updatedAt'])
+          && data.email == request.auth.token.get('email', '')
+          && validUserFields(data)
+          && data.createdAt == request.time
+          && data.updatedAt == request.time;
+      }
+
+      // Email and createdAt can't change; finishing onboarding needs a real profile.
+      function validUserUpdate() {
+        let data = request.resource.data;
+        return data.diff(resource.data).affectedKeys().hasOnly([
+            'displayName', 'photoUrl', 'course', 'school', 'onboardingComplete', 'updatedAt'])
+          && validUserFields(data)
+          && data.updatedAt == request.time
+          && (data.onboardingComplete == false
+            || (data.displayName.size() >= 2 && data.course.size() >= 1 && data.school.size() >= 1));
+      }
+    }
+
+    // --------------------------------------------------------------- groups
+
+    match /groups/{groupId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.memberIds;
+      allow create: if signedIn() && validNewGroup();
+      allow update: if signedIn() && request.auth.uid in resource.data.memberIds && validGroupUpdate();
+      // Deleting a group must also delete its subcollections: the deleteGroup function does that.
+      allow delete: if false;
+
+      // Every member has exactly one known role, and there is always at least one leader.
+      function validGroupFields(data) {
+        return isText(data.name, 3, 60)
+          && isText(data.thesisTitle, 0, 200)
+          && isText(data.course, 1, 80)
+          && isText(data.school, 1, 100)
+          && isOptionalTimestamp(data.proposalDefenseAt)
+          && isOptionalTimestamp(data.finalDefenseAt)
+          && data.memberIds is list
+          && data.roles is map
+          && data.roles.keys().hasOnly(data.memberIds)
+          && data.memberIds.hasOnly(data.roles.keys())
+          && data.roles.values().hasOnly(['leader', 'member', 'adviser'])
+          && data.roles.values().hasAny(['leader']);
+      }
+
+      // The creator is the only member, and is the leader.
+      function validNewGroup() {
+        let data = request.resource.data;
+        return data.keys().hasOnly([
+            'name', 'thesisTitle', 'course', 'school', 'memberIds', 'roles',
+            'createdBy', 'createdAt', 'updatedAt', 'proposalDefenseAt', 'finalDefenseAt'])
+          && validGroupFields(data)
+          && data.createdBy == request.auth.uid
+          && data.memberIds == [request.auth.uid]
+          && data.roles[request.auth.uid] == 'leader'
+          && data.createdAt == request.time
+          && data.updatedAt == request.time;
+      }
+
+      function validGroupUpdate() {
+        let before = resource.data;
+        let after = request.resource.data;
+        let changed = after.diff(before).affectedKeys();
+        return validGroupFields(after)
+          && after.updatedAt == request.time
+          && (leaderEdit(before, after, changed) || selfLeave(before, after, changed));
+      }
+
+      // Leaders edit details and roles, and may remove members. They can't add
+      // anyone: new members only arrive through the joinGroup function.
+      function leaderEdit(before, after, changed) {
+        return before.roles[request.auth.uid] == 'leader'
+          && changed.hasOnly([
+              'name', 'thesisTitle', 'course', 'school', 'roles', 'memberIds',
+              'updatedAt', 'proposalDefenseAt', 'finalDefenseAt'])
+          && before.memberIds.hasAll(after.memberIds);
+      }
+
+      // Anyone may remove themselves, touching nothing else.
+      function selfLeave(before, after, changed) {
+        let me = [request.auth.uid].toSet();
+        return changed.hasOnly(['memberIds', 'roles', 'updatedAt'])
+          && after.memberIds.toSet() == before.memberIds.toSet().difference(me)
+          && before.roles.diff(after.roles).affectedKeys() == me;
+      }
+
+      // Display copies of each member's name and photo, plus their role.
+      match /members/{memberId} {
+        allow read: if isMember(groupId);
+
+        // Only the creator's own entry, written in the same batch that creates the group.
+        allow create: if isSelf(memberId)
+          && !exists(groupPath(groupId))
+          && getAfter(groupPath(groupId)).data.createdBy == request.auth.uid
+          && request.resource.data.keys().hasOnly(['displayName', 'photoUrl', 'role', 'joinedAt'])
+          && request.resource.data.role == 'leader'
+          && isText(request.resource.data.displayName, 0, 50)
+          && isOptionalText(request.resource.data.photoUrl, 2048)
+          && request.resource.data.joinedAt == request.time;
+
+        // A role change must match the group's roles map in the same batch.
+        allow update: if isLeader(groupId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
+          && request.resource.data.role == getAfter(groupPath(groupId)).data.roles[memberId];
+
+        // Removed or leaving: the entry goes together with the memberIds change.
+        allow delete: if (isLeader(groupId) || isSelf(memberId))
+          && !(memberId in getAfter(groupPath(groupId)).data.memberIds);
+      }
+
+      // Current invite codes, shown on the leader's screen. Written by createInvite.
+      match /invites/{role} {
+        allow read: if isLeader(groupId);
+        allow write: if false;
+      }
+    }
+
+    // Code lookup table. Only the Cloud Functions read or write it, so codes
+    // can't be listed or guessed through the client SDK.
+    match /inviteCodes/{code} {
+      allow read, write: if false;
+    }
+  }
+}

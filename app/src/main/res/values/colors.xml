@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Only what XML needs (launcher icon, splash). Compose colors live in designsystem/theme. -->
+    <color name="brand_indigo">#3949AB</color>
+    <color name="brand_indigo_light">#C5CAE9</color>
+    <color name="white">#FFFFFF</color>
+</resources>

@@ -1,0 +1,22 @@
+# Gradle / Android Studio
+.gradle/
+build/
+/local.properties
+/.idea/
+*.iml
+.DS_Store
+/captures
+.externalNativeBuild/
+.cxx/
+.kotlin/
+
+# Firebase config is project-specific; each developer downloads their own
+app/google-services.json
+
+# Cloud Functions
+functions/node_modules/
+functions/lib/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase/

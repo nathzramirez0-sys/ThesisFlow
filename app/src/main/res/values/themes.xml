@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose draws everything; the window theme only needs to be edge-to-edge friendly. -->
+    <style name="Theme.ThesisFlow" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Shown by the system splash screen API while the session is loading. -->
+    <style name="Theme.ThesisFlow.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_indigo</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.ThesisFlow</item>
+    </style>
+</resources>

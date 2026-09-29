@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Join a group · ThesisFlow</title>
+  <!--
+    Shown only when the app isn't installed (or links aren't verified yet).
+    With the app installed, Android opens /join/<code> links in the app directly.
+  -->
+  <style>
+    :root { --bg: #f7f7fc; --fg: #1b1b21; --muted: #5b5d72; --accent: #3949ab; --card: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #131318; --fg: #e4e1e9; --muted: #c4c5dd; --accent: #b9c3ff; --card: #1f1f25; }
+    }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg);
+           color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+    main { max-width: 420px; margin: 16px; padding: 32px 24px; background: var(--card);
+           border-radius: 20px; text-align: center; }
+    h1 { font-size: 1.5rem; margin: 0 0 8px; }
+    p { color: var(--muted); margin: 8px 0; }
+    .code { font: 700 2rem/1.2 ui-monospace, monospace; letter-spacing: 0.25em; color: var(--accent);
+            margin: 24px 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>You're invited to a thesis group</h1>
+    <p>Install ThesisFlow, then open <strong>Add a group → Join</strong> and enter this code:</p>
+    <div class="code" id="code">······</div>
+    <p>Codes expire after 7 days. Ask your group leader for a new one if it stops working.</p>
+  </main>
+  <script>
+    const part = location.pathname.split("/").filter(Boolean)[1] || "";
+    const code = part.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+    if (code) document.getElementById("code").textContent = code;
+  </script>
+</body>
+</html>

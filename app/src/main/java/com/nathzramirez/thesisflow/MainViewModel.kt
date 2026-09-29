@@ -1,0 +1,98 @@
+package com.nathzramirez.thesisflow
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.nathzramirez.thesisflow.domain.model.AuthState
+import com.nathzramirez.thesisflow.domain.repository.AuthRepository
+import com.nathzramirez.thesisflow.domain.repository.UserRepository
+import com.nathzramirez.thesisflow.domain.result.onFailure
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+/** Which part of the app to show. Derived from auth and profile state, never set by screens. */
+sealed interface SessionState {
+    data object Loading : SessionState
+    data object SignedOut : SessionState
+    data object NeedsOnboarding : SessionState
+    /** Signed in, but the profile isn't cached and couldn't be fetched (usually offline). */
+    data object ProfileUnavailable : SessionState
+    data object Ready : SessionState
+}
+
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
+    private val userRepository: UserRepository,
+    private val savedStateHandle: SavedStateHandle,
+) : ViewModel() {
+
+    private val profileLoadFailed = MutableStateFlow(false)
+    private var profileLoad: Job? = null
+
+    /**
+     * Sign-in, sign-out and finishing onboarding all flow through here, so no screen
+     * navigates between those stages itself. Signing out anywhere returns to login.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val session: StateFlow<SessionState> = authRepository.authState
+        .flatMapLatest { auth ->
+            when (auth) {
+                AuthState.SignedOut -> flowOf(SessionState.SignedOut)
+                is AuthState.SignedIn -> userRepository.observeCurrentUser()
+                    .onEach { user -> if (user == null) loadProfile() }
+                    .combine(profileLoadFailed) { user, failed ->
+                        when {
+                            user == null && failed -> SessionState.ProfileUnavailable
+                            user == null -> SessionState.Loading
+                            !user.onboardingComplete -> SessionState.NeedsOnboarding
+                            else -> SessionState.Ready
+                        }
+                    }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, SessionState.Loading)
+
+    /** An invite code from a link, kept until the user is signed in and onboarded. */
+    val pendingInviteCode: StateFlow<String?> = savedStateHandle.getStateFlow(KEY_PENDING_INVITE, null)
+
+    fun onLinkOpened(url: String?) {
+        InviteLinks.parseCode(url, BuildConfig.INVITE_HOST)?.let { code ->
+            savedStateHandle[KEY_PENDING_INVITE] = code
+        }
+    }
+
+    fun onInviteHandled() {
+        savedStateHandle[KEY_PENDING_INVITE] = null
+    }
+
+    fun retryProfile() = loadProfile()
+
+    fun signOut() {
+        viewModelScope.launch { authRepository.signOut() }
+    }
+
+    /** Fetches (or creates) the profile when the cache has none, e.g. right after signing in. */
+    private fun loadProfile() {
+        if (profileLoad?.isActive == true) return
+        profileLoadFailed.value = false
+        profileLoad = viewModelScope.launch {
+            userRepository.refreshCurrentUser().onFailure { profileLoadFailed.value = true }
+        }
+    }
+
+    private companion object {
+        const val KEY_PENDING_INVITE = "pendingInviteCode"
+    }
+}

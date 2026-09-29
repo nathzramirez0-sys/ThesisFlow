@@ -1,0 +1,6 @@
+# Store text with LF in the repo; the shell script must stay LF even on Windows checkouts.
+* text=auto eol=lf
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary
+*.png binary
