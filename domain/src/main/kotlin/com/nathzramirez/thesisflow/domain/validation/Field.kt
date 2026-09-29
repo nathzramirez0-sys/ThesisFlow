@@ -10,4 +10,6 @@ enum class Field {
     GROUP_NAME,
     THESIS_TITLE,
     INVITE_CODE,
+    CHAPTER_TITLE,
+    VERSION_NOTE,
 }

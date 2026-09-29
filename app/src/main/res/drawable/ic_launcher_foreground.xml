@@ -9,12 +9,12 @@
         android:fillColor="@color/white"
         android:pathData="M40,30 H62 L72,40 V76 A4,4 0 0 1 68,80 H40 A4,4 0 0 1 36,76 V34 A4,4 0 0 1 40,30 Z" />
     <path
-        android:fillColor="@color/brand_indigo_light"
+        android:fillColor="@color/brand_violet_soft"
         android:pathData="M62,30 L72,40 H65 A3,3 0 0 1 62,37 Z" />
     <path
         android:pathData="M44,57 L51,64 L64,49"
         android:strokeWidth="5"
-        android:strokeColor="@color/brand_indigo"
+        android:strokeColor="@color/brand_violet"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
 </vector>

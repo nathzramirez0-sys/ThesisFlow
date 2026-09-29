@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// Files live at groups/{groupId}/files/{fileId}/{fileName}, matching the
+// storagePath in each Firestore files/{fileId} record. Access follows group
+// membership, read straight from Firestore, so both stores share one access model.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function group(groupId) {
+      return firestore.get(/databases/(default)/documents/groups/$(groupId)).data;
+    }
+
+    function isMember(groupId) {
+      return request.auth != null && request.auth.uid in group(groupId).memberIds;
+    }
+
+    function roleIn(groupId) {
+      return group(groupId).roles[request.auth.uid];
+    }
+
+    // Same limits as UploadRules.kt and the files rule in firestore.rules.
+    function validUpload(groupId) {
+      let kind = request.resource.metadata.kind;
+      return request.resource.size > 0
+        && request.resource.size <= 20 * 1024 * 1024
+        && (request.resource.contentType in ['application/pdf',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+            || request.resource.contentType.matches('image/.*'))
+        && request.resource.metadata.uploadedBy == request.auth.uid
+        && kind in ['draft', 'attachment', 'feedback']
+        // Advisers upload only files for their feedback; students never do.
+        && (roleIn(groupId) == 'adviser') == (kind == 'feedback');
+    }
+
+    match /groups/{groupId}/files/{fileId}/{fileName} {
+      allow read: if isMember(groupId);
+      allow create: if isMember(groupId) && validUpload(groupId);
+      // A retried upload rewrites its own object; nobody can replace someone else's.
+      allow update: if isMember(groupId) && validUpload(groupId)
+        && resource.metadata.uploadedBy == request.auth.uid;
+      allow delete: if isMember(groupId)
+        && (resource.metadata.uploadedBy == request.auth.uid || roleIn(groupId) == 'leader');
+    }
+  }
+}

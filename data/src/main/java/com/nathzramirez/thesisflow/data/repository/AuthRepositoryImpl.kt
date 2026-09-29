@@ -10,6 +10,8 @@ import com.nathzramirez.thesisflow.data.di.IoDispatcher
 import com.nathzramirez.thesisflow.data.local.ThesisFlowDatabase
 import com.nathzramirez.thesisflow.data.remote.safeCall
 import com.nathzramirez.thesisflow.data.remote.uidFlow
+import com.nathzramirez.thesisflow.data.upload.LocalFiles
+import com.nathzramirez.thesisflow.data.upload.UploadScheduler
 import com.nathzramirez.thesisflow.domain.model.AuthState
 import com.nathzramirez.thesisflow.domain.repository.AuthRepository
 import com.nathzramirez.thesisflow.domain.result.AppResult
@@ -30,6 +32,8 @@ import javax.inject.Singleton
 internal class AuthRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
     private val database: ThesisFlowDatabase,
+    private val uploadScheduler: UploadScheduler,
+    private val localFiles: LocalFiles,
     @param:ApplicationContext private val context: Context,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : AuthRepository {
@@ -63,7 +67,13 @@ internal class AuthRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Log.w(TAG, "Could not clear credential state", e)
         }
-        withContext(ioDispatcher) { database.clearAllTables() }
+        // Nothing of this account may be left for the next one: queued uploads,
+        // cached rows, or downloaded files.
+        uploadScheduler.cancelAll()
+        withContext(ioDispatcher) {
+            database.clearAllTables()
+            localFiles.deleteAll()
+        }
     }
 
     private companion object {

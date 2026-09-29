@@ -25,5 +25,10 @@ sealed interface DomainError {
     /** The change would leave the group without a leader. */
     data object LastLeader : DomainError
 
+    data object UnsupportedFileType : DomainError
+    data object FileTooLarge : DomainError
+    /** The picked file is empty or could no longer be read. */
+    data object FileUnreadable : DomainError
+
     data class Unknown(val message: String?) : DomainError
 }

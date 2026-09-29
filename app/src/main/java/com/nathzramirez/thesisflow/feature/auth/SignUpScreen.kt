@@ -11,18 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,14 +29,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nathzramirez.thesisflow.R
+import com.nathzramirez.thesisflow.designsystem.component.AuroraScaffold
+import com.nathzramirez.thesisflow.designsystem.component.AuroraTopBar
 import com.nathzramirez.thesisflow.designsystem.component.EmailField
-import com.nathzramirez.thesisflow.designsystem.component.LoadingButton
+import com.nathzramirez.thesisflow.designsystem.component.GlassCard
+import com.nathzramirez.thesisflow.designsystem.component.GradientButton
 import com.nathzramirez.thesisflow.designsystem.component.PasswordField
 import com.nathzramirez.thesisflow.domain.validation.Field
 import com.nathzramirez.thesisflow.ui.messageFor
 import com.nathzramirez.thesisflow.ui.messageRes
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
     onBack: () -> Unit,
@@ -59,17 +54,8 @@ fun SignUpScreen(
         viewModel.errorShown()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back))
-                    }
-                },
-            )
-        },
+    AuroraScaffold(
+        topBar = { AuroraTopBar(title = "", onBack = onBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
@@ -84,43 +70,49 @@ fun SignUpScreen(
         ) {
             Column(
                 modifier = Modifier.widthIn(max = 480.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                AuthHeader(
-                    title = stringResource(R.string.sign_up_title),
+                AuthHero(
+                    headlineStart = stringResource(R.string.sign_up_headline_start),
+                    headlineAccent = stringResource(R.string.sign_up_headline_accent),
                     subtitle = stringResource(R.string.sign_up_subtitle),
                 )
-                EmailField(
-                    value = state.email,
-                    onValueChange = viewModel::onEmailChange,
-                    error = state.fieldErrors.messageFor(Field.EMAIL),
-                    enabled = !state.isSubmitting,
-                )
-                PasswordField(
-                    value = state.password,
-                    onValueChange = viewModel::onPasswordChange,
-                    label = stringResource(R.string.field_password),
-                    error = state.fieldErrors.messageFor(Field.PASSWORD),
-                    hint = stringResource(R.string.password_rules),
-                    enabled = !state.isSubmitting,
-                    isNewPassword = true,
-                    imeAction = ImeAction.Next,
-                )
-                PasswordField(
-                    value = state.confirmPassword,
-                    onValueChange = viewModel::onConfirmPasswordChange,
-                    label = stringResource(R.string.field_confirm_password),
-                    error = state.fieldErrors.messageFor(Field.CONFIRM_PASSWORD),
-                    enabled = !state.isSubmitting,
-                    isNewPassword = true,
-                    imeAction = ImeAction.Done,
-                    onImeAction = viewModel::signUp,
-                )
-                LoadingButton(
-                    text = stringResource(R.string.sign_up),
-                    onClick = viewModel::signUp,
-                    loading = state.isSubmitting,
-                )
+                GlassCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        EmailField(
+                            value = state.email,
+                            onValueChange = viewModel::onEmailChange,
+                            error = state.fieldErrors.messageFor(Field.EMAIL),
+                            enabled = !state.isSubmitting,
+                        )
+                        PasswordField(
+                            value = state.password,
+                            onValueChange = viewModel::onPasswordChange,
+                            label = stringResource(R.string.field_password),
+                            error = state.fieldErrors.messageFor(Field.PASSWORD),
+                            hint = stringResource(R.string.password_rules),
+                            enabled = !state.isSubmitting,
+                            isNewPassword = true,
+                            imeAction = ImeAction.Next,
+                        )
+                        PasswordField(
+                            value = state.confirmPassword,
+                            onValueChange = viewModel::onConfirmPasswordChange,
+                            label = stringResource(R.string.field_confirm_password),
+                            error = state.fieldErrors.messageFor(Field.CONFIRM_PASSWORD),
+                            enabled = !state.isSubmitting,
+                            isNewPassword = true,
+                            imeAction = ImeAction.Done,
+                            onImeAction = viewModel::signUp,
+                        )
+                        GradientButton(
+                            text = stringResource(R.string.sign_up),
+                            onClick = viewModel::signUp,
+                            loading = state.isSubmitting,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                }
                 GoogleSignInSection(
                     enabled = !state.isSubmitting,
                     onIdToken = viewModel::signUpWithGoogle,
@@ -131,7 +123,11 @@ fun SignUpScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(stringResource(R.string.sign_up_have_account), style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(R.string.sign_up_have_account),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     TextButton(onClick = onBack) { Text(stringResource(R.string.sign_in)) }
                 }
             }

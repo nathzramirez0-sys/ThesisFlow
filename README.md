@@ -2,21 +2,22 @@
 
 A thesis and group-project manager for college students in the Philippines. Groups track who is doing what, which chapters are done, what the adviser said, and what is due next.
 
-> **Status:** in development. Phase 1 of 7 is done: accounts, profiles, and creating, joining and managing groups.
+> **Status:** in development. Phases 1–2 of 7 are done: accounts and groups, plus the chapter tracker with
+> statuses, deadlines, and versioned draft uploads that work offline.
 
 ## Stack
 
-Kotlin · Jetpack Compose (Material 3) · MVVM + Clean Architecture · Hilt · Coroutines & Flow · Navigation Compose · Room · Firebase Auth, Firestore and Cloud Functions · Credential Manager (Google sign-in) · JUnit, MockK, Turbine
+Kotlin · Jetpack Compose (Material 3) · MVVM + Clean Architecture · Hilt · Coroutines & Flow · Navigation Compose · Room · WorkManager · Firebase Auth, Firestore, Cloud Storage and Cloud Functions · Credential Manager (Google sign-in) · JUnit, MockK, Turbine
 
 ## Project layout
 
 | Module | What it holds |
 |---|---|
 | `domain/` | Pure Kotlin: models, validation, repository interfaces, use cases. No Android or Firebase imports. |
-| `data/` | Room cache, Firestore mapping, repositories, and the sync manager that copies Firestore into Room. |
-| `app/` | Compose screens, ViewModels, navigation, theme. |
-| `functions/` | TypeScript Cloud Functions: `joinGroup`, `createInvite`, `deleteGroup`, `syncMemberProfiles`. |
-| `firestore.rules` | Security rules: users only reach their own profile and the groups they belong to. |
+| `data/` | Room cache, Firestore mapping, repositories, the sync manager that copies Firestore into Room, and the WorkManager upload worker. |
+| `app/` | Compose screens, ViewModels, navigation, and the "aurora glass" design system. |
+| `functions/` | TypeScript Cloud Functions: `joinGroup`, `createInvite`, `deleteGroup`, `cleanUpChapter`, `syncMemberProfiles`. |
+| `firestore.rules`, `storage.rules` | Security rules: users only reach their own profile and the groups they belong to, with per-role limits (e.g. only leaders and advisers approve chapters). |
 
 ## Run it locally (no Firebase project needed)
 
@@ -57,7 +58,7 @@ Google sign-in needs a real project; email sign-up works against the emulators.
    ```
 
    ```bash
-   npx firebase-tools deploy --only firestore,functions,hosting
+   npx firebase-tools deploy --only firestore,storage,functions,hosting
    ```
 
 4. For invite links, set `thesisflow.inviteHost` in `gradle.properties` to your `<project-id>.web.app` domain, and put your signing certificate's SHA-256 in `hosting/public/.well-known/assetlinks.json`.
@@ -67,3 +68,5 @@ Google sign-in needs a real project; email sign-up works against the emulators.
 ```bash
 ./gradlew test
 ```
+
+Fonts: [Space Grotesk](third_party/fonts/SpaceGrotesk-OFL.txt) and [Manrope](third_party/fonts/Manrope-OFL.txt), both under the SIL Open Font License.

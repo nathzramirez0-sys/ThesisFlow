@@ -26,4 +26,11 @@ data class CreateJoinGroupRoute(
 data class GroupOverviewRoute(val groupId: String)
 
 @Serializable
+data class ChapterListRoute(val groupId: String)
+
+/** [number] is the chapter's position in the list, shown as "Chapter 03". */
+@Serializable
+data class ChapterDetailRoute(val groupId: String, val chapterId: String, val number: Int)
+
+@Serializable
 data object ProfileRoute

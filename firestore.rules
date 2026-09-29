@@ -25,8 +25,12 @@ service cloud.firestore {
       return signedIn() && request.auth.uid in get(groupPath(groupId)).data.memberIds;
     }
 
+    function roleIn(groupId) {
+      return get(groupPath(groupId)).data.roles.get(request.auth.uid, null);
+    }
+
     function isLeader(groupId) {
-      return signedIn() && get(groupPath(groupId)).data.roles.get(request.auth.uid, null) == 'leader';
+      return signedIn() && roleIn(groupId) == 'leader';
     }
 
     function isText(value, min, max) {
@@ -170,11 +174,130 @@ service cloud.firestore {
           && !(memberId in getAfter(groupPath(groupId)).data.memberIds);
       }
 
+      // ------------------------------------------------------------- chapters
+
+      match /chapters/{chapterId} {
+        allow read: if isMember(groupId);
+
+        // Leaders add chapters. getAfter also covers the batch that creates the
+        // group together with its five default chapters.
+        allow create: if signedIn()
+          && getAfter(groupPath(groupId)).data.roles.get(request.auth.uid, null) == 'leader'
+          && request.resource.data.keys().hasOnly([
+              'title', 'order', 'status', 'deadline', 'latestVersion', 'updatedAt', 'updatedBy'])
+          && validChapter(request.resource.data)
+          && request.resource.data.status == 'not_started'
+          && request.resource.data.latestVersion == 0
+          && request.resource.data.updatedAt == request.time
+          && request.resource.data.updatedBy == request.auth.uid;
+
+        allow update: if isMember(groupId) && validChapterUpdate(roleIn(groupId));
+
+        // Drafts under a deleted chapter are removed by the cleanUpChapter function.
+        allow delete: if isLeader(groupId);
+
+        function validChapter(data) {
+          return isText(data.title, 1, 100)
+            && data.order is int
+            && data.status in ['not_started', 'drafting', 'for_review', 'revisions', 'approved']
+            && isOptionalTimestamp(data.deadline)
+            && data.latestVersion is int;
+        }
+
+        // Who may change which fields (the same table as ChapterRules.kt):
+        // - leaders: everything; members: status and new versions; advisers: status.
+        // - only leaders and advisers may approve a chapter or undo an approval.
+        // - a new version must be exactly one higher, with its version document
+        //   written in the same transaction.
+        function validChapterUpdate(role) {
+          let before = resource.data;
+          let after = request.resource.data;
+          let changed = after.diff(before).affectedKeys();
+          let editable = role == 'leader'
+            ? ['title', 'order', 'status', 'deadline', 'latestVersion', 'updatedAt', 'updatedBy']
+            : role == 'member'
+              ? ['status', 'latestVersion', 'updatedAt', 'updatedBy']
+              : ['status', 'updatedAt', 'updatedBy'];
+          return validChapter(after)
+            && changed.hasOnly(editable)
+            && after.updatedAt == request.time
+            && after.updatedBy == request.auth.uid
+            && (after.status == before.status
+              || role != 'member'
+              || (before.status != 'approved' && after.status != 'approved'))
+            && (!changed.hasAny(['latestVersion'])
+              || (after.latestVersion == before.latestVersion + 1
+                && existsAfter(/databases/$(database)/documents/groups/$(groupId)/chapters/$(chapterId)/versions/$(string(after.latestVersion)))));
+        }
+
+        // One document per uploaded draft; its id is the version number.
+        match /versions/{versionId} {
+          allow read: if isMember(groupId);
+          allow create: if isMember(groupId)
+            && roleIn(groupId) != 'adviser'
+            && request.resource.data.keys().hasOnly([
+                'groupId', 'chapterId', 'versionNumber', 'fileId', 'note', 'uploadedBy', 'uploadedAt'])
+            && request.resource.data.groupId == groupId
+            && request.resource.data.chapterId == chapterId
+            && request.resource.data.versionNumber is int
+            && versionId == string(request.resource.data.versionNumber)
+            && getAfter(/databases/$(database)/documents/groups/$(groupId)/chapters/$(chapterId)).data.latestVersion
+                == request.resource.data.versionNumber
+            && existsAfter(/databases/$(database)/documents/groups/$(groupId)/files/$(request.resource.data.fileId))
+            && isText(request.resource.data.note, 0, 500)
+            && request.resource.data.uploadedBy == request.auth.uid
+            && request.resource.data.uploadedAt == request.time;
+          // History is permanent; only the Admin SDK removes it, with its chapter.
+          allow update, delete: if false;
+        }
+      }
+
+      // ---------------------------------------------------------------- files
+
+      // One record per file in Storage. Students upload drafts and task
+      // attachments; advisers upload only files that go with their feedback.
+      match /files/{fileId} {
+        allow read: if isMember(groupId);
+        allow create: if isMember(groupId) && validNewFile(roleIn(groupId));
+        allow update: if false;
+        // Drafts are version history and stay; other files can be removed by
+        // whoever uploaded them, or by a leader.
+        allow delete: if isMember(groupId)
+          && resource.data.kind != 'draft'
+          && (resource.data.uploadedBy == request.auth.uid || isLeader(groupId));
+
+        function validNewFile(role) {
+          let data = request.resource.data;
+          return data.keys().hasOnly([
+              'name', 'mimeType', 'sizeBytes', 'storagePath', 'kind', 'chapterId',
+              'taskId', 'feedbackId', 'uploadedBy', 'uploadedAt'])
+            && isText(data.name, 1, 100)
+            && data.mimeType is string
+            && (data.mimeType in ['application/pdf',
+                  'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+                || data.mimeType.matches('image/.*'))
+            && data.sizeBytes is int && data.sizeBytes > 0 && data.sizeBytes <= 20 * 1024 * 1024
+            && data.storagePath == 'groups/' + groupId + '/files/' + fileId + '/' + data.name
+            && data.kind in ['draft', 'attachment', 'feedback']
+            && (role == 'adviser') == (data.kind == 'feedback')
+            && (data.kind != 'draft'
+              || exists(/databases/$(database)/documents/groups/$(groupId)/chapters/$(data.chapterId)))
+            && data.uploadedBy == request.auth.uid
+            && data.uploadedAt == request.time;
+        }
+      }
+
       // Current invite codes, shown on the leader's screen. Written by createInvite.
       match /invites/{role} {
         allow read: if isLeader(groupId);
         allow write: if false;
       }
+    }
+
+    // The collection-group query that syncs every chapter's versions at once.
+    // It must filter on groupId, which lets this rule check membership.
+    match /{path=**}/versions/{versionId} {
+      allow read: if isMember(resource.data.groupId);
     }
 
     // Code lookup table. Only the Cloud Functions read or write it, so codes

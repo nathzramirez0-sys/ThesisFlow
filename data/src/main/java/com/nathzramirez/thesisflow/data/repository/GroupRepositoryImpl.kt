@@ -11,15 +11,18 @@ import com.nathzramirez.thesisflow.data.local.dao.UserDao
 import com.nathzramirez.thesisflow.data.local.entity.GroupEntity
 import com.nathzramirez.thesisflow.data.local.entity.MemberEntity
 import com.nathzramirez.thesisflow.data.local.toDomain
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Chapters
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Functions
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Groups
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Invites
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Members
 import com.nathzramirez.thesisflow.data.remote.awaitOrQueued
+import com.nathzramirez.thesisflow.data.remote.newChapterFields
 import com.nathzramirez.thesisflow.data.remote.requireUid
 import com.nathzramirez.thesisflow.data.remote.safeCall
 import com.nathzramirez.thesisflow.data.remote.toInvite
 import com.nathzramirez.thesisflow.data.remote.toWire
+import com.nathzramirez.thesisflow.domain.model.DefaultChapters
 import com.nathzramirez.thesisflow.domain.model.Group
 import com.nathzramirez.thesisflow.domain.model.Invite
 import com.nathzramirez.thesisflow.domain.model.Member
@@ -31,6 +34,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,6 +53,14 @@ internal class GroupRepositoryImpl @Inject constructor(
     private fun memberRef(groupId: String, uid: String) =
         groupRef(groupId).collection(Members.COLLECTION).document(uid)
 
+    /**
+     * A Cloud Function call with a 30 s limit instead of the SDK's 70 s default:
+     * long enough for a cold start, short enough that a stuck request turns into
+     * a "check your connection" message instead of a minute-long spinner.
+     */
+    private fun callable(name: String) =
+        functions.getHttpsCallable(name).apply { setTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS) }
+
     override fun observeMyGroups(): Flow<List<Group>> =
         groupDao.observeAll().map { groups -> groups.map { it.toDomain() } }
 
@@ -64,8 +76,9 @@ internal class GroupRepositoryImpl @Inject constructor(
             .catch { emit(emptyList()) }
 
     /**
-     * One atomic batch writes the group and the creator's member entry. The rules
-     * check both together: the creator must be the only member, with the leader role.
+     * One atomic batch writes the group, the creator's member entry and the five
+     * standard chapters. The rules check them together: the creator must be the
+     * only member, with the leader role.
      */
     override suspend fun createGroup(
         name: String,
@@ -76,8 +89,9 @@ internal class GroupRepositoryImpl @Inject constructor(
         val uid = auth.requireUid()
         val profile = userDao.get(uid)
         val group = firestore.collection(Groups.COLLECTION).document()
+        val batch = firestore.batch()
 
-        firestore.batch()
+        batch
             .set(
                 group,
                 mapOf(
@@ -103,8 +117,10 @@ internal class GroupRepositoryImpl @Inject constructor(
                     Members.JOINED_AT to FieldValue.serverTimestamp(),
                 ),
             )
-            .commit()
-            .awaitOrQueued()
+        DefaultChapters.titles.forEachIndexed { index, title ->
+            batch.set(group.collection(Chapters.COLLECTION).document(), newChapterFields(title, index + 1, uid))
+        }
+        batch.commit().awaitOrQueued()
 
         // Cache now, so the group screen has data even before the listener reports it.
         val now = Instant.now()
@@ -142,7 +158,7 @@ internal class GroupRepositoryImpl @Inject constructor(
      * The listener then adds the group to Room.
      */
     override suspend fun joinGroup(code: String): AppResult<String> = safeCall {
-        val result = functions.getHttpsCallable(Functions.JOIN_GROUP)
+        val result = callable(Functions.JOIN_GROUP)
             .call(mapOf("code" to code))
             .await()
         val data = result.getData() as? Map<*, *>
@@ -150,7 +166,7 @@ internal class GroupRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createInvite(groupId: String, role: Role): AppResult<Invite> = safeCall {
-        val result = functions.getHttpsCallable(Functions.CREATE_INVITE)
+        val result = callable(Functions.CREATE_INVITE)
             .call(mapOf("groupId" to groupId, "role" to role.toWire()))
             .await()
         val data = checkNotNull(result.getData() as? Map<*, *>) { "createInvite returned no data" }
@@ -187,14 +203,14 @@ internal class GroupRepositoryImpl @Inject constructor(
 
     override suspend fun leaveGroup(groupId: String): AppResult<Unit> = safeCall {
         removeFromGroup(groupId, auth.requireUid())
-        groupDao.deleteWithMembers(groupId)
+        groupDao.deleteWithContent(groupId)
     }
 
     override suspend fun deleteGroup(groupId: String): AppResult<Unit> = safeCall {
-        functions.getHttpsCallable(Functions.DELETE_GROUP)
+        callable(Functions.DELETE_GROUP)
             .call(mapOf("groupId" to groupId))
             .await()
-        groupDao.deleteWithMembers(groupId)
+        groupDao.deleteWithContent(groupId)
     }
 
     private suspend fun removeFromGroup(groupId: String, uid: String) {
@@ -210,5 +226,9 @@ internal class GroupRepositoryImpl @Inject constructor(
             .delete(memberRef(groupId, uid))
             .commit()
             .awaitOrQueued()
+    }
+
+    private companion object {
+        const val CALL_TIMEOUT_SECONDS = 30L
     }
 }

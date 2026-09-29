@@ -3,7 +3,9 @@ package com.nathzramirez.thesisflow.designsystem.component
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -21,6 +23,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import com.nathzramirez.thesisflow.R
+import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
 
 /**
  * A full-width outlined field. An [error] replaces the [hint] underneath the field,
@@ -44,6 +47,8 @@ fun FormTextField(
     autofillType: ContentType? = null,
 ) {
     val supporting = error ?: hint
+    val aurora = AuroraTheme.colors
+    val colors = MaterialTheme.colorScheme
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -60,6 +65,18 @@ fun FormTextField(
         keyboardActions = keyboardActions,
         visualTransformation = visualTransformation,
         trailingIcon = trailingIcon,
+        shape = MaterialTheme.shapes.medium,
+        // Glass fields: see-through fill, a quiet outline, and a violet one when focused.
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = aurora.glassFillStrong,
+            unfocusedContainerColor = aurora.glassFill,
+            disabledContainerColor = aurora.glassFill,
+            errorContainerColor = aurora.glassFill,
+            unfocusedBorderColor = colors.outline,
+            focusedBorderColor = colors.primary,
+            focusedLabelColor = colors.primary,
+            cursorColor = aurora.gradientEnd,
+        ),
     )
 }
 

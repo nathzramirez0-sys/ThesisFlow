@@ -30,6 +30,9 @@ fun DomainError.messageRes(): Int = when (this) {
     DomainError.InviteExpired -> R.string.error_invite_expired
     DomainError.GroupFull -> R.string.error_group_full
     DomainError.LastLeader -> R.string.error_last_leader
+    DomainError.UnsupportedFileType -> R.string.error_unsupported_file
+    DomainError.FileTooLarge -> R.string.error_file_too_large
+    DomainError.FileUnreadable -> R.string.error_file_unreadable
     DomainError.SignInCancelled,
     is DomainError.Unknown,
     -> R.string.error_unknown
@@ -63,7 +66,8 @@ private fun requiredMessage(field: Field): Int = when (field) {
     Field.SCHOOL -> R.string.validation_required_school
     Field.GROUP_NAME -> R.string.validation_required_group_name
     Field.INVITE_CODE -> R.string.validation_required_invite_code
-    Field.THESIS_TITLE -> R.string.validation_required
+    Field.CHAPTER_TITLE -> R.string.validation_required_chapter_title
+    Field.THESIS_TITLE, Field.VERSION_NOTE -> R.string.validation_required
 }
 
 private fun minLength(field: Field): Int = when (field) {
@@ -78,5 +82,7 @@ private fun maxLength(field: Field): Int = when (field) {
     Field.SCHOOL -> Validators.SCHOOL_MAX
     Field.GROUP_NAME -> Validators.GROUP_NAME_MAX
     Field.THESIS_TITLE -> Validators.THESIS_TITLE_MAX
+    Field.CHAPTER_TITLE -> Validators.CHAPTER_TITLE_MAX
+    Field.VERSION_NOTE -> Validators.VERSION_NOTE_MAX
     else -> Int.MAX_VALUE
 }

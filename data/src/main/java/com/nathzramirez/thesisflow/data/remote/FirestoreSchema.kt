@@ -50,6 +50,58 @@ internal object FirestoreSchema {
         const val EXPIRES_AT = "expiresAt"
     }
 
+    /** `groups/{groupId}/chapters/{chapterId}` */
+    object Chapters {
+        const val COLLECTION = "chapters"
+        const val TITLE = "title"
+        const val ORDER = "order"
+        const val STATUS = "status"
+        const val DEADLINE = "deadline"
+        const val LATEST_VERSION = "latestVersion"
+        const val UPDATED_AT = "updatedAt"
+        const val UPDATED_BY = "updatedBy"
+    }
+
+    /**
+     * `groups/{groupId}/chapters/{chapterId}/versions/{versionNumber}`. The group and
+     * chapter ids are repeated inside, so one collection-group query per group can
+     * sync every chapter's history.
+     */
+    object Versions {
+        const val COLLECTION = "versions"
+        const val GROUP_ID = "groupId"
+        const val CHAPTER_ID = "chapterId"
+        const val VERSION_NUMBER = "versionNumber"
+        const val FILE_ID = "fileId"
+        const val NOTE = "note"
+        const val UPLOADED_BY = "uploadedBy"
+        const val UPLOADED_AT = "uploadedAt"
+    }
+
+    /** `groups/{groupId}/files/{fileId}` */
+    object Files {
+        const val COLLECTION = "files"
+        const val NAME = "name"
+        const val MIME_TYPE = "mimeType"
+        const val SIZE_BYTES = "sizeBytes"
+        const val STORAGE_PATH = "storagePath"
+        const val KIND = "kind"
+        const val CHAPTER_ID = "chapterId"
+        const val TASK_ID = "taskId"
+        const val FEEDBACK_ID = "feedbackId"
+        const val UPLOADED_BY = "uploadedBy"
+        const val UPLOADED_AT = "uploadedAt"
+    }
+
+    /** Cloud Storage layout; storage.rules matches the same path. */
+    object Storage {
+        const val METADATA_UPLOADED_BY = "uploadedBy"
+        const val METADATA_KIND = "kind"
+
+        fun filePath(groupId: String, fileId: String, fileName: String) =
+            "groups/$groupId/files/$fileId/$fileName"
+    }
+
     object Functions {
         const val JOIN_GROUP = "joinGroup"
         const val CREATE_INVITE = "createInvite"

@@ -23,20 +23,33 @@ interface GroupDao {
 
     /**
      * Makes the table match a complete server snapshot of "my groups": groups the user
-     * left or was removed from disappear, together with their cached members.
+     * left or was removed from disappear, together with everything cached under them.
      */
     @Transaction
     suspend fun replaceAll(groups: List<GroupEntity>) {
         if (groups.isEmpty()) deleteAll() else deleteAllExcept(groups.map { it.id })
         upsertAll(groups)
-        deleteOrphanMembers()
+        deleteOrphans()
     }
 
     /** Removes a group the user just left, without waiting for the listener. */
     @Transaction
-    suspend fun deleteWithMembers(groupId: String) {
+    suspend fun deleteWithContent(groupId: String) {
         delete(groupId)
+        deleteOrphans()
+    }
+
+    /**
+     * Group content has no foreign keys (listeners deliver it in any order), so
+     * rows whose group is gone are removed here instead of by cascade.
+     */
+    @Transaction
+    suspend fun deleteOrphans() {
         deleteOrphanMembers()
+        deleteOrphanChapters()
+        deleteOrphanVersions()
+        deleteOrphanFiles()
+        deleteOrphanPendingUploads()
     }
 
     @Query("DELETE FROM groups WHERE id = :groupId")
@@ -50,4 +63,17 @@ interface GroupDao {
 
     @Query("DELETE FROM members WHERE groupId NOT IN (SELECT id FROM groups)")
     suspend fun deleteOrphanMembers()
+
+    @Query("DELETE FROM chapters WHERE groupId NOT IN (SELECT id FROM groups)")
+    suspend fun deleteOrphanChapters()
+
+    @Query("DELETE FROM chapter_versions WHERE groupId NOT IN (SELECT id FROM groups)")
+    suspend fun deleteOrphanVersions()
+
+    @Query("DELETE FROM files WHERE groupId NOT IN (SELECT id FROM groups)")
+    suspend fun deleteOrphanFiles()
+
+    /** The upload worker notices its row is gone and deletes the local copy. */
+    @Query("DELETE FROM pending_uploads WHERE groupId NOT IN (SELECT id FROM groups)")
+    suspend fun deleteOrphanPendingUploads()
 }

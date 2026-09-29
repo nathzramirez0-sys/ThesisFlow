@@ -1,13 +1,19 @@
 package com.nathzramirez.thesisflow.data.remote
 
 import com.google.firebase.firestore.DocumentSnapshot
+import com.nathzramirez.thesisflow.data.local.entity.ChapterEntity
+import com.nathzramirez.thesisflow.data.local.entity.ChapterVersionEntity
+import com.nathzramirez.thesisflow.data.local.entity.FileEntity
 import com.nathzramirez.thesisflow.data.local.entity.GroupEntity
 import com.nathzramirez.thesisflow.data.local.entity.MemberEntity
 import com.nathzramirez.thesisflow.data.local.entity.UserEntity
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Chapters
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Files
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Groups
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Invites
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Members
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Users
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Versions
 import com.nathzramirez.thesisflow.domain.model.Invite
 import java.time.Instant
 
@@ -70,6 +76,53 @@ internal fun DocumentSnapshot.toInvite(): Invite? {
     val role = roleFromWire(getString(Invites.ROLE)) ?: return null
     val expiresAt = instant(Invites.EXPIRES_AT) ?: return null
     return Invite(code = code, role = role, expiresAt = expiresAt)
+}
+
+internal fun DocumentSnapshot.toChapterEntity(groupId: String): ChapterEntity? {
+    if (!exists()) return null
+    val status = chapterStatusFromWire(getString(Chapters.STATUS)) ?: return null
+    return ChapterEntity(
+        id = id,
+        groupId = groupId,
+        sortOrder = getLong(Chapters.ORDER)?.toInt() ?: 0,
+        title = getString(Chapters.TITLE).orEmpty(),
+        status = status,
+        deadline = instant(Chapters.DEADLINE),
+        latestVersion = getLong(Chapters.LATEST_VERSION)?.toInt() ?: 0,
+        updatedAt = instant(Chapters.UPDATED_AT),
+        hasPendingWrites = metadata.hasPendingWrites(),
+    )
+}
+
+internal fun DocumentSnapshot.toVersionEntity(): ChapterVersionEntity? {
+    if (!exists()) return null
+    return ChapterVersionEntity(
+        groupId = getString(Versions.GROUP_ID) ?: return null,
+        chapterId = getString(Versions.CHAPTER_ID) ?: return null,
+        versionNumber = getLong(Versions.VERSION_NUMBER)?.toInt() ?: return null,
+        fileId = getString(Versions.FILE_ID) ?: return null,
+        note = getString(Versions.NOTE).orEmpty(),
+        uploadedBy = getString(Versions.UPLOADED_BY).orEmpty(),
+        uploadedAt = instant(Versions.UPLOADED_AT),
+    )
+}
+
+internal fun DocumentSnapshot.toFileEntity(groupId: String): FileEntity? {
+    if (!exists()) return null
+    return FileEntity(
+        id = id,
+        groupId = groupId,
+        name = getString(Files.NAME) ?: return null,
+        mimeType = getString(Files.MIME_TYPE).orEmpty(),
+        sizeBytes = getLong(Files.SIZE_BYTES) ?: 0,
+        storagePath = getString(Files.STORAGE_PATH) ?: return null,
+        kind = fileKindFromWire(getString(Files.KIND)) ?: return null,
+        chapterId = getString(Files.CHAPTER_ID),
+        taskId = getString(Files.TASK_ID),
+        feedbackId = getString(Files.FEEDBACK_ID),
+        uploadedBy = getString(Files.UPLOADED_BY).orEmpty(),
+        uploadedAt = instant(Files.UPLOADED_AT),
+    )
 }
 
 /**

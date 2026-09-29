@@ -1,21 +1,24 @@
 package com.nathzramirez.thesisflow.feature.groups.overview
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import com.nathzramirez.thesisflow.domain.model.AuthState
 import com.nathzramirez.thesisflow.domain.model.Group
 import com.nathzramirez.thesisflow.domain.model.Invite
 import com.nathzramirez.thesisflow.domain.model.Member
 import com.nathzramirez.thesisflow.domain.model.Role
+import com.nathzramirez.thesisflow.domain.model.ThesisProgress
 import com.nathzramirez.thesisflow.domain.repository.AuthRepository
+import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
 import com.nathzramirez.thesisflow.domain.repository.GroupRepository
 import com.nathzramirez.thesisflow.domain.result.AppResult
 import com.nathzramirez.thesisflow.domain.result.DomainError
 import com.nathzramirez.thesisflow.domain.usecase.group.ChangeMemberRoleUseCase
 import com.nathzramirez.thesisflow.domain.usecase.group.LeaveGroupUseCase
 import com.nathzramirez.thesisflow.navigation.GroupOverviewRoute
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,13 +32,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class GroupOverviewUiState(
     val isLoading: Boolean = true,
     val group: Group? = null,
     val members: List<Member> = emptyList(),
     val invites: Map<Role, Invite> = emptyMap(),
+    val progress: ThesisProgress = ThesisProgress(0, 0, 0),
     val myUid: String? = null,
     val isBusy: Boolean = false,
     /** The invite role whose code is being generated, to show a spinner on that row. */
@@ -53,16 +56,26 @@ private data class ActionState(
     val finished: Boolean = false,
 )
 
-@HiltViewModel
-class GroupOverviewViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+/**
+ * Receives its route through assisted injection instead of reading SavedStateHandle,
+ * so tests can pass a plain [GroupOverviewRoute].
+ */
+@HiltViewModel(assistedFactory = GroupOverviewViewModel.Factory::class)
+class GroupOverviewViewModel @AssistedInject constructor(
+    @Assisted private val route: GroupOverviewRoute,
     authRepository: AuthRepository,
     private val groupRepository: GroupRepository,
+    chapterRepository: ChapterRepository,
     private val changeMemberRole: ChangeMemberRoleUseCase,
     private val leaveGroup: LeaveGroupUseCase,
 ) : ViewModel() {
 
-    private val groupId = savedStateHandle.toRoute<GroupOverviewRoute>().groupId
+    @AssistedFactory
+    interface Factory {
+        fun create(route: GroupOverviewRoute): GroupOverviewViewModel
+    }
+
+    private val groupId = route.groupId
     private val actions = MutableStateFlow(ActionState())
 
     /** Distinguishes "not synced yet" (just joined) from "gone" (removed or deleted). */
@@ -78,6 +91,8 @@ class GroupOverviewViewModel @Inject constructor(
         .flatMapLatest { canInvite -> if (canInvite) groupRepository.observeInvites(groupId) else flowOf(emptyList()) }
 
     private val myUid = authRepository.authState.map { (it as? AuthState.SignedIn)?.uid }
+
+    private val progress = chapterRepository.observeChapters(groupId).map(ThesisProgress::of)
 
     val uiState: StateFlow<GroupOverviewUiState> = combine(
         group,
@@ -98,7 +113,8 @@ class GroupOverviewViewModel @Inject constructor(
             error = action.error,
             isClosed = action.finished || (group == null && hasSeenGroup),
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GroupOverviewUiState())
+    }.combine(progress) { state, progress -> state.copy(progress = progress) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GroupOverviewUiState())
 
     fun createInvite(role: Role) = runAction(inviteRole = role) { groupRepository.createInvite(groupId, role) }
 

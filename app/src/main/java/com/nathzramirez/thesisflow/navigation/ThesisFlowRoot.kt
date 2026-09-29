@@ -1,15 +1,8 @@
 package com.nathzramirez.thesisflow.navigation
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
@@ -19,9 +12,14 @@ import androidx.navigation.toRoute
 import com.nathzramirez.thesisflow.MainViewModel
 import com.nathzramirez.thesisflow.R
 import com.nathzramirez.thesisflow.SessionState
+import com.nathzramirez.thesisflow.designsystem.component.AuroraBackground
 import com.nathzramirez.thesisflow.designsystem.component.FullScreenLoading
+import com.nathzramirez.thesisflow.designsystem.component.GhostButton
+import com.nathzramirez.thesisflow.designsystem.component.GradientButton
 import com.nathzramirez.thesisflow.designsystem.component.MessageScreen
 import com.nathzramirez.thesisflow.feature.auth.LoginScreen
+import com.nathzramirez.thesisflow.feature.chapters.detail.ChapterDetailScreen
+import com.nathzramirez.thesisflow.feature.chapters.list.ChapterListScreen
 import com.nathzramirez.thesisflow.feature.auth.SignUpScreen
 import com.nathzramirez.thesisflow.feature.groups.createjoin.CreateJoinGroupScreen
 import com.nathzramirez.thesisflow.feature.groups.list.GroupListScreen
@@ -38,7 +36,7 @@ fun ThesisFlowRoot(viewModel: MainViewModel) {
     val session by viewModel.session.collectAsStateWithLifecycle()
     val pendingInvite by viewModel.pendingInviteCode.collectAsStateWithLifecycle()
 
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    AuroraBackground {
         when (session) {
             SessionState.Loading -> FullScreenLoading()
             SessionState.SignedOut -> AuthNavHost(hasPendingInvite = pendingInvite != null)
@@ -47,8 +45,8 @@ fun ThesisFlowRoot(viewModel: MainViewModel) {
                 title = stringResource(R.string.profile_unavailable_title),
                 body = stringResource(R.string.profile_unavailable_body),
             ) {
-                Button(onClick = viewModel::retryProfile) { Text(stringResource(R.string.action_retry)) }
-                TextButton(onClick = viewModel::signOut) { Text(stringResource(R.string.action_sign_out)) }
+                GradientButton(text = stringResource(R.string.action_retry), onClick = viewModel::retryProfile)
+                GhostButton(text = stringResource(R.string.action_sign_out), onClick = viewModel::signOut)
             }
             SessionState.Ready -> MainNavHost(
                 pendingInviteCode = pendingInvite,
@@ -108,8 +106,29 @@ private fun MainNavHost(pendingInviteCode: String?, onInviteHandled: () -> Unit)
                 },
             )
         }
-        composable<GroupOverviewRoute> {
-            GroupOverviewScreen(onBack = { navController.popBackStack() })
+        composable<GroupOverviewRoute> { entry ->
+            val route = entry.toRoute<GroupOverviewRoute>()
+            GroupOverviewScreen(
+                route = route,
+                onBack = { navController.popBackStack() },
+                onOpenChapters = { navController.navigate(ChapterListRoute(route.groupId)) },
+            )
+        }
+        composable<ChapterListRoute> { entry ->
+            val route = entry.toRoute<ChapterListRoute>()
+            ChapterListScreen(
+                route = route,
+                onBack = { navController.popBackStack() },
+                onChapterClick = { chapterId, number ->
+                    navController.navigate(ChapterDetailRoute(route.groupId, chapterId, number))
+                },
+            )
+        }
+        composable<ChapterDetailRoute> { entry ->
+            ChapterDetailScreen(
+                route = entry.toRoute<ChapterDetailRoute>(),
+                onBack = { navController.popBackStack() },
+            )
         }
         composable<ProfileRoute> {
             ProfileScreen(onBack = { navController.popBackStack() })

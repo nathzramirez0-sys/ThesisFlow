@@ -1,9 +1,13 @@
 package com.nathzramirez.thesisflow.data.di
 
 import com.nathzramirez.thesisflow.data.repository.AuthRepositoryImpl
+import com.nathzramirez.thesisflow.data.repository.ChapterRepositoryImpl
+import com.nathzramirez.thesisflow.data.repository.FileRepositoryImpl
 import com.nathzramirez.thesisflow.data.repository.GroupRepositoryImpl
 import com.nathzramirez.thesisflow.data.repository.UserRepositoryImpl
 import com.nathzramirez.thesisflow.domain.repository.AuthRepository
+import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
+import com.nathzramirez.thesisflow.domain.repository.FileRepository
 import com.nathzramirez.thesisflow.domain.repository.GroupRepository
 import com.nathzramirez.thesisflow.domain.repository.UserRepository
 import dagger.Binds
@@ -27,4 +31,10 @@ internal abstract class RepositoryModule {
 
     @Binds
     abstract fun bindGroupRepository(impl: GroupRepositoryImpl): GroupRepository
+
+    @Binds
+    abstract fun bindChapterRepository(impl: ChapterRepositoryImpl): ChapterRepository
+
+    @Binds
+    abstract fun bindFileRepository(impl: FileRepositoryImpl): FileRepository
 }

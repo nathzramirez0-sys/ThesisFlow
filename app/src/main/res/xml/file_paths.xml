@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only downloaded copies are shareable; pending uploads stay private. -->
+<paths>
+    <cache-path
+        name="downloads"
+        path="downloads/" />
+</paths>

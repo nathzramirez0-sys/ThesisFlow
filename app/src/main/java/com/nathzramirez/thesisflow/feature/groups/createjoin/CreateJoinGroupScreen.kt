@@ -11,19 +11,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,8 +33,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nathzramirez.thesisflow.R
+import com.nathzramirez.thesisflow.designsystem.component.AuroraScaffold
+import com.nathzramirez.thesisflow.designsystem.component.AuroraTopBar
 import com.nathzramirez.thesisflow.designsystem.component.FormTextField
-import com.nathzramirez.thesisflow.designsystem.component.LoadingButton
+import com.nathzramirez.thesisflow.designsystem.component.GlassCard
+import com.nathzramirez.thesisflow.designsystem.component.GradientButton
+import com.nathzramirez.thesisflow.designsystem.component.SegmentedControl
 import com.nathzramirez.thesisflow.domain.validation.Field
 import com.nathzramirez.thesisflow.ui.messageFor
 import com.nathzramirez.thesisflow.ui.messageRes
@@ -52,8 +47,7 @@ import com.nathzramirez.thesisflow.ui.validationMessage
 private const val TAB_CREATE = 0
 private const val TAB_JOIN = 1
 
-/** One screen, two tabs. An invite link opens it on the Join tab with the code filled in. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** One screen, two modes. An invite link opens it in Join mode with the code filled in. */
 @Composable
 fun CreateJoinGroupScreen(
     initialInviteCode: String?,
@@ -91,17 +85,8 @@ fun CreateJoinGroupScreen(
         joinViewModel.errorShown()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.create_join_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back))
-                    }
-                },
-            )
-        },
+    AuroraScaffold(
+        topBar = { AuroraTopBar(title = stringResource(R.string.create_join_title), onBack = onBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
@@ -109,36 +94,24 @@ fun CreateJoinGroupScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .consumeWindowInsets(padding)
-                .imePadding(),
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            PrimaryTabRow(selectedTabIndex = selectedTab) {
-                Tab(
-                    selected = selectedTab == TAB_CREATE,
-                    onClick = { selectedTab = TAB_CREATE },
-                    text = { Text(stringResource(R.string.tab_create)) },
-                )
-                Tab(
-                    selected = selectedTab == TAB_JOIN,
-                    onClick = { selectedTab = TAB_JOIN },
-                    text = { Text(stringResource(R.string.tab_join)) },
-                )
-            }
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.widthIn(max = 480.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                Column(
-                    modifier = Modifier.widthIn(max = 480.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    if (selectedTab == TAB_CREATE) {
-                        CreateGroupForm(state = createState, viewModel = createViewModel)
-                    } else {
-                        JoinGroupForm(state = joinState, viewModel = joinViewModel)
-                    }
+                SegmentedControl(
+                    options = listOf(stringResource(R.string.tab_create), stringResource(R.string.tab_join)),
+                    selectedIndex = selectedTab,
+                    onSelect = { selectedTab = it },
+                )
+                if (selectedTab == TAB_CREATE) {
+                    CreateGroupForm(state = createState, viewModel = createViewModel)
+                } else {
+                    JoinGroupForm(state = joinState, viewModel = joinViewModel)
                 }
             }
         }
@@ -151,48 +124,52 @@ private fun CreateGroupForm(state: CreateGroupUiState, viewModel: CreateGroupVie
     val sentence = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next)
     val words = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next)
 
-    FormTextField(
-        value = state.name,
-        onValueChange = viewModel::onNameChange,
-        label = stringResource(R.string.field_group_name),
-        hint = stringResource(R.string.field_group_name_hint),
-        error = state.fieldErrors.messageFor(Field.GROUP_NAME),
-        enabled = enabled,
-        keyboardOptions = sentence,
-    )
-    FormTextField(
-        value = state.thesisTitle,
-        onValueChange = viewModel::onThesisTitleChange,
-        label = stringResource(R.string.field_thesis_title),
-        error = state.fieldErrors.messageFor(Field.THESIS_TITLE),
-        enabled = enabled,
-        singleLine = false,
-        maxLines = 3,
-        keyboardOptions = sentence,
-    )
-    FormTextField(
-        value = state.course,
-        onValueChange = viewModel::onCourseChange,
-        label = stringResource(R.string.field_course),
-        error = state.fieldErrors.messageFor(Field.COURSE),
-        enabled = enabled,
-        keyboardOptions = words,
-    )
-    FormTextField(
-        value = state.school,
-        onValueChange = viewModel::onSchoolChange,
-        label = stringResource(R.string.field_school),
-        error = state.fieldErrors.messageFor(Field.SCHOOL),
-        enabled = enabled,
-        keyboardOptions = words.copy(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { viewModel.create() }),
-    )
+    GlassCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            FormTextField(
+                value = state.name,
+                onValueChange = viewModel::onNameChange,
+                label = stringResource(R.string.field_group_name),
+                hint = stringResource(R.string.field_group_name_hint),
+                error = state.fieldErrors.messageFor(Field.GROUP_NAME),
+                enabled = enabled,
+                keyboardOptions = sentence,
+            )
+            FormTextField(
+                value = state.thesisTitle,
+                onValueChange = viewModel::onThesisTitleChange,
+                label = stringResource(R.string.field_thesis_title),
+                error = state.fieldErrors.messageFor(Field.THESIS_TITLE),
+                enabled = enabled,
+                singleLine = false,
+                maxLines = 3,
+                keyboardOptions = sentence,
+            )
+            FormTextField(
+                value = state.course,
+                onValueChange = viewModel::onCourseChange,
+                label = stringResource(R.string.field_course),
+                error = state.fieldErrors.messageFor(Field.COURSE),
+                enabled = enabled,
+                keyboardOptions = words,
+            )
+            FormTextField(
+                value = state.school,
+                onValueChange = viewModel::onSchoolChange,
+                label = stringResource(R.string.field_school),
+                error = state.fieldErrors.messageFor(Field.SCHOOL),
+                enabled = enabled,
+                keyboardOptions = words.copy(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { viewModel.create() }),
+            )
+        }
+    }
     Text(
         stringResource(R.string.create_group_note),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    LoadingButton(
+    GradientButton(
         text = stringResource(R.string.create_group),
         onClick = viewModel::create,
         loading = state.isSubmitting,
@@ -201,26 +178,30 @@ private fun CreateGroupForm(state: CreateGroupUiState, viewModel: CreateGroupVie
 
 @Composable
 private fun JoinGroupForm(state: JoinGroupUiState, viewModel: JoinGroupViewModel) {
-    Text(
-        stringResource(R.string.join_group_note),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    FormTextField(
-        value = state.code,
-        onValueChange = viewModel::onCodeChange,
-        label = stringResource(R.string.field_invite_code),
-        error = state.codeError?.let { validationMessage(Field.INVITE_CODE, it) },
-        enabled = !state.isSubmitting,
-        keyboardOptions = KeyboardOptions(
-            capitalization = KeyboardCapitalization.Characters,
-            keyboardType = KeyboardType.Ascii,
-            autoCorrectEnabled = false,
-            imeAction = ImeAction.Done,
-        ),
-        keyboardActions = KeyboardActions(onDone = { viewModel.join() }),
-    )
-    LoadingButton(
+    GlassCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                stringResource(R.string.join_group_note),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            FormTextField(
+                value = state.code,
+                onValueChange = viewModel::onCodeChange,
+                label = stringResource(R.string.field_invite_code),
+                error = state.codeError?.let { validationMessage(Field.INVITE_CODE, it) },
+                enabled = !state.isSubmitting,
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Characters,
+                    keyboardType = KeyboardType.Ascii,
+                    autoCorrectEnabled = false,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(onDone = { viewModel.join() }),
+            )
+        }
+    }
+    GradientButton(
         text = stringResource(R.string.join_group),
         onClick = viewModel::join,
         loading = state.isSubmitting,

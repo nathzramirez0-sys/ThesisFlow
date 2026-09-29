@@ -9,14 +9,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,14 +26,18 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nathzramirez.thesisflow.R
-import com.nathzramirez.thesisflow.designsystem.component.LoadingButton
+import com.nathzramirez.thesisflow.designsystem.component.AuroraScaffold
+import com.nathzramirez.thesisflow.designsystem.component.AuroraTopBar
+import com.nathzramirez.thesisflow.designsystem.component.GlassCard
+import com.nathzramirez.thesisflow.designsystem.component.GradientButton
+import com.nathzramirez.thesisflow.designsystem.component.HudLabel
+import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
 import com.nathzramirez.thesisflow.ui.messageRes
 
 /**
  * Shown once after the first sign-in. Saving marks onboarding complete, and the
  * session state then switches to the main app by itself.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(viewModel: ProfileViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -49,14 +50,11 @@ fun OnboardingScreen(viewModel: ProfileViewModel = hiltViewModel()) {
         viewModel.messageShown()
     }
 
-    Scaffold(
+    AuroraScaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.onboarding_title)) },
-                actions = {
-                    TextButton(onClick = viewModel::signOut) { Text(stringResource(R.string.action_sign_out)) }
-                },
-            )
+            AuroraTopBar(title = "", actions = {
+                TextButton(onClick = viewModel::signOut) { Text(stringResource(R.string.action_sign_out)) }
+            })
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
@@ -67,26 +65,32 @@ fun OnboardingScreen(viewModel: ProfileViewModel = hiltViewModel()) {
                 .consumeWindowInsets(padding)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
+                .padding(horizontal = 24.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(
                 modifier = Modifier.widthIn(max = 480.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                Text(
-                    stringResource(R.string.onboarding_body),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                ProfileForm(
-                    state = state,
-                    onDisplayNameChange = viewModel::onDisplayNameChange,
-                    onCourseChange = viewModel::onCourseChange,
-                    onSchoolChange = viewModel::onSchoolChange,
-                    onDone = viewModel::save,
-                )
-                LoadingButton(
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HudLabel(stringResource(R.string.onboarding_step), color = AuroraTheme.colors.gradientEnd)
+                    Text(stringResource(R.string.onboarding_title), style = MaterialTheme.typography.headlineLarge)
+                    Text(
+                        stringResource(R.string.onboarding_body),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                GlassCard {
+                    ProfileForm(
+                        state = state,
+                        onDisplayNameChange = viewModel::onDisplayNameChange,
+                        onCourseChange = viewModel::onCourseChange,
+                        onSchoolChange = viewModel::onSchoolChange,
+                        onDone = viewModel::save,
+                    )
+                }
+                GradientButton(
                     text = stringResource(R.string.onboarding_continue),
                     onClick = viewModel::save,
                     loading = state.isSaving,

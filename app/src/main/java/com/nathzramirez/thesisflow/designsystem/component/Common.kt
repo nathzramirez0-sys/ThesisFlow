@@ -1,49 +1,33 @@
 package com.nathzramirez.thesisflow.designsystem.component
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-
-/** A full-width primary button that shows a spinner and ignores taps while [loading]. */
-@Composable
-fun LoadingButton(
-    text: String,
-    onClick: () -> Unit,
-    loading: Boolean,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-) {
-    Button(
-        onClick = onClick,
-        enabled = enabled && !loading,
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        if (loading) {
-            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-        } else {
-            Text(text)
-        }
-    }
-}
+import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
 
 @Composable
 fun FullScreenLoading(modifier: Modifier = Modifier, message: String? = null) {
@@ -52,62 +36,93 @@ fun FullScreenLoading(modifier: Modifier = Modifier, message: String? = null) {
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CircularProgressIndicator()
-        if (message != null) Text(message, style = MaterialTheme.typography.bodyMedium)
+        CircularProgressIndicator(color = AuroraTheme.colors.gradientEnd, strokeWidth = 3.dp)
+        if (message != null) HudLabel(message)
     }
 }
 
-/** Centered title and body with optional actions below, used for empty and error states. */
+/** A glowing orb around an icon: the visual anchor of empty and error states. */
+@Composable
+fun GlowOrb(icon: ImageVector, modifier: Modifier = Modifier, size: Dp = 96.dp) {
+    val aurora = AuroraTheme.colors
+    Box(
+        modifier = modifier
+            .size(size)
+            .drawBehind {
+                drawCircle(
+                    Brush.radialGradient(listOf(aurora.glow.copy(alpha = 0.45f), Color.Transparent)),
+                    radius = this.size.minDimension,
+                )
+            }
+            .clip(CircleShape)
+            .background(aurora.glassFillStrong)
+            .border(1.5.dp, aurora.brandGradient, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = aurora.gradientEnd, modifier = Modifier.size(size * 0.42f))
+    }
+}
+
+/** Centered orb, title and body with optional actions below: empty and error states. */
 @Composable
 fun MessageScreen(
     title: String,
     body: String,
     modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
     actions: @Composable () -> Unit = {},
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(32.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        if (icon != null) GlowOrb(icon, modifier = Modifier.padding(bottom = 12.dp))
+        Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
         Text(
             body,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(max = 360.dp),
         )
-        actions()
+        Column(
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .widthIn(max = 360.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) { actions() }
     }
 }
 
-/** Profile photo when there is one, otherwise the person's initials. */
+/** Profile photo, or initials, inside a thin gradient ring. */
 @Composable
-fun Avatar(name: String, photoUrl: String?, modifier: Modifier = Modifier, size: Dp = 40.dp) {
-    if (photoUrl != null) {
-        AsyncImage(
-            model = photoUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = modifier
-                .size(size)
-                .clip(CircleShape),
-        )
-    } else {
-        Surface(
-            modifier = modifier.size(size),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.secondaryContainer,
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = initialsOf(name),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-            }
+fun Avatar(name: String, photoUrl: String?, modifier: Modifier = Modifier, size: Dp = 44.dp) {
+    val aurora = AuroraTheme.colors
+    Box(
+        modifier = modifier
+            .size(size)
+            .border(1.5.dp, aurora.brandGradient, CircleShape)
+            .padding(3.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (photoUrl != null) {
+            AsyncImage(
+                model = photoUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+        } else {
+            Text(
+                text = initialsOf(name),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
         }
     }
 }

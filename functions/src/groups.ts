@@ -1,10 +1,12 @@
 import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { onCall } from "firebase-functions/v2/https";
 import { Collections, fail, requireString, requireUid } from "./shared";
 
 /**
- * Deletes a group with every subcollection under it. Clients can't do this
- * themselves: Firestore doesn't delete subcollections along with their parent.
+ * Deletes a group with every subcollection under it and all its uploaded files.
+ * Clients can't do this themselves: Firestore doesn't delete subcollections
+ * along with their parent, and Storage has no "delete folder" for clients.
  */
 export const deleteGroup = onCall(async (request) => {
   const uid = requireUid(request);
@@ -28,5 +30,7 @@ export const deleteGroup = onCall(async (request) => {
   await batch.commit();
 
   await db.recursiveDelete(groupRef);
+  // Every uploaded file of the group sits under one Storage prefix.
+  await getStorage().bucket().deleteFiles({ prefix: `groups/${groupId}/` });
   return { deleted: true };
 });

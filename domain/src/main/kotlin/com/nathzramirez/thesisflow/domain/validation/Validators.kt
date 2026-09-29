@@ -14,6 +14,8 @@ object Validators {
     const val GROUP_NAME_MIN = 3
     const val GROUP_NAME_MAX = 60
     const val THESIS_TITLE_MAX = 200
+    const val CHAPTER_TITLE_MAX = 100
+    const val VERSION_NOTE_MAX = 500
 
     private val emailRegex = Regex("""^[^\s@]+@[^\s@]+\.[^\s@]+$""")
 
@@ -53,6 +55,12 @@ object Validators {
 
     fun thesisTitle(value: String): ValidationError? =
         text(value, required = false, max = THESIS_TITLE_MAX)
+
+    fun chapterTitle(value: String): ValidationError? =
+        text(value, required = true, max = CHAPTER_TITLE_MAX)
+
+    fun versionNote(value: String): ValidationError? =
+        text(value, required = false, max = VERSION_NOTE_MAX)
 
     fun inviteCode(normalized: String): ValidationError? = when {
         normalized.isEmpty() -> ValidationError.REQUIRED

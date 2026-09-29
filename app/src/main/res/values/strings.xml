@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ThesisFlow</string>
-    <string name="app_tagline">Your thesis, chapter by chapter.</string>
+    <string name="auth_headline_start">Your thesis,</string>
+    <string name="auth_headline_accent">in flow.</string>
+    <string name="auth_subtitle">Chapters, drafts and adviser feedback in one place for your whole group.</string>
 
     <!-- Common -->
     <string name="action_back">Back</string>
@@ -10,6 +12,12 @@
     <string name="action_sign_out">Sign out</string>
     <string name="action_save">Save</string>
     <string name="action_more">More options</string>
+    <string name="action_add">Add</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_change">Change</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_open">Open</string>
     <string name="loading">Loading…</string>
 
     <!-- Auth -->
@@ -26,6 +34,8 @@
     <string name="sign_in_or">or</string>
     <string name="continue_with_google">Continue with Google</string>
     <string name="sign_up_title">Create your account</string>
+    <string name="sign_up_headline_start">Start your</string>
+    <string name="sign_up_headline_accent">thesis flow.</string>
     <string name="sign_up_subtitle">Track chapters, tasks and adviser feedback with your group.</string>
     <string name="sign_up">Create account</string>
     <string name="sign_up_have_account">Already have an account?</string>
@@ -37,6 +47,7 @@
 
     <!-- Profile and onboarding -->
     <string name="onboarding_title">Set up your profile</string>
+    <string name="onboarding_step">Step 1 · Profile</string>
     <string name="onboarding_body">Your groupmates and adviser will see this. You can change it later.</string>
     <string name="onboarding_continue">Continue</string>
     <string name="field_display_name">Full name</string>
@@ -51,6 +62,8 @@
 
     <!-- Group list -->
     <string name="groups_title">My groups</string>
+    <string name="groups_greeting">Hi, %1$s</string>
+    <string name="groups_subtitle">Here\'s where every thesis stands.</string>
     <string name="groups_new">Add group</string>
     <string name="groups_empty_title">No groups yet</string>
     <string name="groups_empty_body">Create a group for your thesis, or join one with a code from your group leader.</string>
@@ -77,9 +90,6 @@
     <string name="join_group">Join group</string>
 
     <!-- Group overview -->
-    <string name="group_you_are_leader">You\'re a leader</string>
-    <string name="group_you_are_member">You\'re a member</string>
-    <string name="group_you_are_adviser">You\'re the adviser</string>
     <string name="role_leader">Leader</string>
     <string name="role_member">Member</string>
     <string name="role_adviser">Adviser</string>
@@ -114,6 +124,74 @@
     <string name="group_delete_body">This permanently deletes the group for every member. It can\'t be undone.</string>
     <string name="group_loading">Loading the group…</string>
 
+    <!-- Chapters -->
+    <string name="chapters_title">Chapters</string>
+    <string name="chapters_open">Open chapters</string>
+    <string name="chapters_progress">%1$d of %2$d approved</string>
+    <string name="chapters_overall">Thesis progress</string>
+    <string name="chapter_number">Chapter %1$02d</string>
+    <string name="chapter_add">Add chapter</string>
+    <string name="chapter_add_title">New chapter</string>
+    <string name="chapter_rename_title">Rename chapter</string>
+    <string name="field_chapter_title">Chapter title</string>
+    <string name="field_chapter_title_hint">e.g. Appendices</string>
+    <string name="chapter_delete_title">Delete %1$s?</string>
+    <string name="chapter_delete_body">Its drafts and version history are deleted too. This can\'t be undone.</string>
+    <string name="chapters_empty_title">No chapters yet</string>
+    <string name="chapters_empty_body_leader">Start with the five chapters most theses use, then rename or add as you go.</string>
+    <string name="chapters_empty_body">Your group leader hasn\'t set up chapters yet.</string>
+    <string name="chapters_add_defaults">Add the standard five chapters</string>
+    <string name="chapter_waiting_sync">Waiting to sync</string>
+    <string name="chapter_no_versions">No drafts yet</string>
+    <string name="chapter_latest_version">v%1$d</string>
+    <string name="chapter_status_label">Status</string>
+    <string name="chapter_deadline_label">Deadline</string>
+    <string name="chapter_no_deadline">No deadline</string>
+    <string name="chapter_set_deadline">Set deadline</string>
+    <string name="chapter_change_status">Change status</string>
+    <string name="chapter_status_locked">Only your leader or adviser can change an approved chapter.</string>
+    <string name="chapter_deleted">This chapter was deleted.</string>
+
+    <string name="status_not_started">Not started</string>
+    <string name="status_drafting">Drafting</string>
+    <string name="status_for_review">For adviser review</string>
+    <string name="status_revisions">Revisions</string>
+    <string name="status_approved">Approved</string>
+
+    <string name="deadline_today">Due today</string>
+    <string name="deadline_tomorrow">Due tomorrow</string>
+    <plurals name="deadline_in_days">
+        <item quantity="one">Due in %d day</item>
+        <item quantity="other">Due in %d days</item>
+    </plurals>
+    <string name="deadline_on">Due %1$s</string>
+    <plurals name="deadline_overdue">
+        <item quantity="one">%d day overdue</item>
+        <item quantity="other">%d days overdue</item>
+    </plurals>
+    <string name="deadline_overdue_today">Overdue</string>
+
+    <!-- Drafts and files -->
+    <string name="drafts_title">Drafts</string>
+    <string name="draft_upload">Upload draft</string>
+    <string name="draft_upload_title">Upload draft</string>
+    <string name="draft_upload_body">%1$s · %2$s</string>
+    <string name="field_version_note">What changed? (optional)</string>
+    <string name="field_version_note_hint">e.g. Fixed citations after adviser comments</string>
+    <string name="draft_upload_confirm">Upload</string>
+    <string name="draft_types">PDF, Word (.docx) or images, up to 20 MB</string>
+    <string name="upload_waiting">Waiting to upload</string>
+    <string name="upload_uploading">Uploading · %1$d%%</string>
+    <string name="upload_failed">Upload failed: %1$s</string>
+    <string name="upload_retry">Retry</string>
+    <string name="upload_discard">Discard</string>
+    <string name="version_by">%1$s · %2$s</string>
+    <string name="version_former_member">Former member</string>
+    <string name="version_latest">Latest</string>
+    <string name="version_syncing">Syncing file…</string>
+    <string name="file_opening">Opening…</string>
+    <string name="file_no_app">No app on this phone can open this file type.</string>
+
     <!-- Validation -->
     <string name="validation_required_email">Enter your email</string>
     <string name="validation_required_password">Enter your password</string>
@@ -130,6 +208,7 @@
     <string name="validation_letter_and_digit">Use both letters and numbers</string>
     <string name="validation_passwords_differ">Passwords don\'t match</string>
     <string name="validation_invite_code">Codes are 6 letters and numbers, like K7QM2P</string>
+    <string name="validation_required_chapter_title">Enter a chapter title</string>
 
     <!-- Errors -->
     <string name="error_check_fields">Please check the highlighted fields.</string>
@@ -145,5 +224,8 @@
     <string name="error_invite_expired">That code has expired. Ask your group leader for a new one.</string>
     <string name="error_group_full">This group is already full.</string>
     <string name="error_last_leader">A group needs at least one leader. Make someone else leader first.</string>
+    <string name="error_unsupported_file">That file type isn\'t supported. Upload a PDF, Word (.docx) or image.</string>
+    <string name="error_file_too_large">That file is over 20 MB. Try compressing it or exporting a smaller PDF.</string>
+    <string name="error_file_unreadable">Couldn\'t read that file. Pick it again.</string>
     <string name="error_unknown">Something went wrong. Please try again.</string>
 </resources>

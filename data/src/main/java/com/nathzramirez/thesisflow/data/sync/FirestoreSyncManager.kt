@@ -2,21 +2,32 @@ package com.nathzramirez.thesisflow.data.sync
 
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.MetadataChanges
+import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.snapshots
 import com.nathzramirez.thesisflow.data.di.ApplicationScope
+import com.nathzramirez.thesisflow.data.local.dao.ChapterDao
+import com.nathzramirez.thesisflow.data.local.dao.ChapterVersionDao
+import com.nathzramirez.thesisflow.data.local.dao.FileDao
 import com.nathzramirez.thesisflow.data.local.dao.GroupDao
 import com.nathzramirez.thesisflow.data.local.dao.MemberDao
 import com.nathzramirez.thesisflow.data.local.dao.UserDao
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Chapters
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Files
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Groups
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Members
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Users
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Versions
+import com.nathzramirez.thesisflow.data.remote.toChapterEntity
+import com.nathzramirez.thesisflow.data.remote.toFileEntity
 import com.nathzramirez.thesisflow.data.remote.toGroupEntity
 import com.nathzramirez.thesisflow.data.remote.toMemberEntity
 import com.nathzramirez.thesisflow.data.remote.toUserEntity
+import com.nathzramirez.thesisflow.data.remote.toVersionEntity
 import com.nathzramirez.thesisflow.data.remote.uidFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,9 +54,10 @@ import kotlin.math.min
  * Copies Firestore into Room while the app is in the foreground.
  *
  * The UI only ever reads Room. This class keeps snapshot listeners open for the
- * signed-in user's profile, their groups, and each group's members, and writes
- * every change into Room. Firestore raises listeners for local writes too, so
- * Room reflects the user's own edits at once, even offline.
+ * signed-in user's profile, their groups, and for each group its members,
+ * chapters, chapter versions and files, and writes every change into Room.
+ * Firestore raises listeners for local writes too, so Room reflects the user's
+ * own edits at once, even offline.
  *
  * Listeners stop when the app goes to the background or the user signs out,
  * and restart when it comes back.
@@ -57,6 +69,9 @@ class FirestoreSyncManager @Inject constructor(
     private val userDao: UserDao,
     private val groupDao: GroupDao,
     private val memberDao: MemberDao,
+    private val chapterDao: ChapterDao,
+    private val versionDao: ChapterVersionDao,
+    private val fileDao: FileDao,
     @param:ApplicationScope private val scope: CoroutineScope,
 ) {
     private var job: Job? = null
@@ -72,7 +87,7 @@ class FirestoreSyncManager @Inject constructor(
 
     private suspend fun syncAccount(uid: String) = coroutineScope {
         launch { syncProfile(uid) }
-        launch { syncGroupsAndMembers(uid) }
+        launch { syncGroups(uid) }
     }
 
     private suspend fun syncProfile(uid: String) {
@@ -86,48 +101,74 @@ class FirestoreSyncManager @Inject constructor(
             }
     }
 
-    /** One listener for the group list, plus one members listener per group, restarted when the list changes. */
+    /** One listener for the group list; each group's content listeners restart when the list changes. */
     @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun syncGroupsAndMembers(uid: String) {
+    private suspend fun syncGroups(uid: String) {
         firestore.collection(Groups.COLLECTION)
             .whereArrayContains(Groups.MEMBER_IDS, uid)
-            // INCLUDE so we also hear when a cached result is confirmed by the server,
-            // which is the moment it becomes safe to delete stale rows.
             .snapshots(MetadataChanges.INCLUDE)
             .retryOnTransientErrors()
-            .onEach { snapshot -> writeGroups(uid, snapshot) }
+            .onEach { snapshot ->
+                if (!isCurrentUser(uid)) return@onEach
+                val groups = snapshot.documents.mapNotNull { it.toGroupEntity(uid) }
+                if (snapshot.metadata.isFromCache) groupDao.upsertAll(groups) else groupDao.replaceAll(groups)
+            }
             .map { snapshot -> snapshot.documents.map { it.id }.toSet() }
             .distinctUntilChanged()
-            .flatMapLatest { groupIds -> groupIds.map { groupId -> syncMembers(uid, groupId) }.merge() }
+            .flatMapLatest { groupIds -> groupIds.flatMap { groupContent(uid, it) }.merge() }
             .catch { Log.w(TAG, "Stopped syncing groups", it) }
             .collect()
     }
 
-    private fun syncMembers(uid: String, groupId: String): Flow<Unit> =
-        firestore.collection(Groups.COLLECTION).document(groupId)
-            .collection(Members.COLLECTION)
-            .snapshots(MetadataChanges.INCLUDE)
-            .retryOnTransientErrors()
-            .map { snapshot -> writeMembers(uid, groupId, snapshot) }
-            // Losing access to one group (e.g. just removed) must not stop the others.
-            .catch { Log.w(TAG, "Stopped syncing members of $groupId", it) }
+    private fun groupContent(uid: String, groupId: String): List<Flow<Unit>> {
+        val group = firestore.collection(Groups.COLLECTION).document(groupId)
+        return listOf(
+            syncQuery(uid, "members of $groupId", group.collection(Members.COLLECTION),
+                map = { it.toMemberEntity(groupId) },
+                upsert = memberDao::upsertAll,
+                replace = { memberDao.replaceForGroup(groupId, it) }),
+            syncQuery(uid, "chapters of $groupId", group.collection(Chapters.COLLECTION),
+                map = { it.toChapterEntity(groupId) },
+                upsert = chapterDao::upsertAll,
+                replace = { chapterDao.replaceForGroup(groupId, it) }),
+            // Versions live under each chapter; one collection-group query covers them all.
+            syncQuery(uid, "versions of $groupId",
+                firestore.collectionGroup(Versions.COLLECTION).whereEqualTo(Versions.GROUP_ID, groupId),
+                map = { it.toVersionEntity() },
+                upsert = versionDao::upsertAll,
+                replace = { versionDao.replaceForGroup(groupId, it) }),
+            syncQuery(uid, "files of $groupId", group.collection(Files.COLLECTION),
+                map = { it.toFileEntity(groupId) },
+                upsert = fileDao::upsertAll,
+                replace = { fileDao.replaceForGroup(groupId, it) }),
+        )
+    }
 
     /**
+     * Mirrors one query into one table.
+     *
      * A snapshot served from the local cache may be incomplete, for example after
      * the cache evicted documents. So only a server-confirmed snapshot may delete
-     * rows; a cached one can only add or update them.
+     * rows ([replace]); a cached one can only add or update them ([upsert]).
+     * MetadataChanges.INCLUDE makes sure we hear the moment a cached result is confirmed.
      */
-    private suspend fun writeGroups(uid: String, snapshot: QuerySnapshot) {
-        if (!isCurrentUser(uid)) return
-        val groups = snapshot.documents.mapNotNull { it.toGroupEntity(uid) }
-        if (snapshot.metadata.isFromCache) groupDao.upsertAll(groups) else groupDao.replaceAll(groups)
-    }
-
-    private suspend fun writeMembers(uid: String, groupId: String, snapshot: QuerySnapshot) {
-        if (!isCurrentUser(uid)) return
-        val members = snapshot.documents.mapNotNull { it.toMemberEntity(groupId) }
-        if (snapshot.metadata.isFromCache) memberDao.upsertAll(members) else memberDao.replaceForGroup(groupId, members)
-    }
+    private fun <T> syncQuery(
+        uid: String,
+        label: String,
+        query: Query,
+        map: (DocumentSnapshot) -> T?,
+        upsert: suspend (List<T>) -> Unit,
+        replace: suspend (List<T>) -> Unit,
+    ): Flow<Unit> =
+        query.snapshots(MetadataChanges.INCLUDE)
+            .retryOnTransientErrors()
+            .map { snapshot: QuerySnapshot ->
+                if (!isCurrentUser(uid)) return@map
+                val rows = snapshot.documents.mapNotNull(map)
+                if (snapshot.metadata.isFromCache) upsert(rows) else replace(rows)
+            }
+            // Losing access to one group (e.g. just removed) must not stop the others.
+            .catch { Log.w(TAG, "Stopped syncing $label", it) }
 
     /** Guards against a late callback from the previous account writing after sign-out. */
     private fun isCurrentUser(uid: String) = auth.currentUser?.uid == uid

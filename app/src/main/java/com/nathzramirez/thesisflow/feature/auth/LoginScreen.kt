@@ -15,7 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -33,9 +32,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nathzramirez.thesisflow.R
+import com.nathzramirez.thesisflow.designsystem.component.AuroraScaffold
 import com.nathzramirez.thesisflow.designsystem.component.EmailField
-import com.nathzramirez.thesisflow.designsystem.component.LoadingButton
+import com.nathzramirez.thesisflow.designsystem.component.GlassCard
+import com.nathzramirez.thesisflow.designsystem.component.GlowDot
+import com.nathzramirez.thesisflow.designsystem.component.GradientButton
 import com.nathzramirez.thesisflow.designsystem.component.PasswordField
+import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
 import com.nathzramirez.thesisflow.domain.validation.Field
 import com.nathzramirez.thesisflow.ui.messageFor
 import com.nathzramirez.thesisflow.ui.messageRes
@@ -59,7 +62,7 @@ fun LoginScreen(
         viewModel.messageShown()
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+    AuroraScaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -67,53 +70,61 @@ fun LoginScreen(
                 .consumeWindowInsets(padding)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Column(
                 modifier = Modifier.widthIn(max = 480.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 Spacer(Modifier.height(24.dp))
-                AuthHeader(
-                    title = stringResource(R.string.app_name),
-                    subtitle = stringResource(R.string.app_tagline),
+                AuthHero(
+                    headlineStart = stringResource(R.string.auth_headline_start),
+                    headlineAccent = stringResource(R.string.auth_headline_accent),
+                    subtitle = stringResource(R.string.auth_subtitle),
                 )
                 if (hasPendingInvite) {
-                    Text(
-                        stringResource(R.string.invite_waiting_sign_in),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        GlowDot(AuroraTheme.colors.gradientEnd)
+                        Text(
+                            stringResource(R.string.invite_waiting_sign_in),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AuroraTheme.colors.gradientEnd,
+                        )
+                    }
                 }
-                Spacer(Modifier.height(8.dp))
 
-                EmailField(
-                    value = state.email,
-                    onValueChange = viewModel::onEmailChange,
-                    error = state.fieldErrors.messageFor(Field.EMAIL),
-                    enabled = !state.isSubmitting,
-                )
-                PasswordField(
-                    value = state.password,
-                    onValueChange = viewModel::onPasswordChange,
-                    label = stringResource(R.string.field_password),
-                    error = state.fieldErrors.messageFor(Field.PASSWORD),
-                    enabled = !state.isSubmitting,
-                    imeAction = ImeAction.Done,
-                    onImeAction = viewModel::signIn,
-                )
-                TextButton(
-                    onClick = viewModel::openPasswordReset,
-                    modifier = Modifier.align(Alignment.End),
-                ) {
-                    Text(stringResource(R.string.sign_in_forgot_password))
+                GlassCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        EmailField(
+                            value = state.email,
+                            onValueChange = viewModel::onEmailChange,
+                            error = state.fieldErrors.messageFor(Field.EMAIL),
+                            enabled = !state.isSubmitting,
+                        )
+                        PasswordField(
+                            value = state.password,
+                            onValueChange = viewModel::onPasswordChange,
+                            label = stringResource(R.string.field_password),
+                            error = state.fieldErrors.messageFor(Field.PASSWORD),
+                            enabled = !state.isSubmitting,
+                            imeAction = ImeAction.Done,
+                            onImeAction = viewModel::signIn,
+                        )
+                        TextButton(
+                            onClick = viewModel::openPasswordReset,
+                            modifier = Modifier.align(Alignment.End),
+                        ) {
+                            Text(stringResource(R.string.sign_in_forgot_password))
+                        }
+                        GradientButton(
+                            text = stringResource(R.string.sign_in),
+                            onClick = viewModel::signIn,
+                            loading = state.isSubmitting,
+                        )
+                    }
                 }
-                LoadingButton(
-                    text = stringResource(R.string.sign_in),
-                    onClick = viewModel::signIn,
-                    loading = state.isSubmitting,
-                )
+
                 GoogleSignInSection(
                     enabled = !state.isSubmitting,
                     onIdToken = viewModel::signInWithGoogle,
@@ -124,7 +135,11 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(stringResource(R.string.sign_in_no_account), style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(R.string.sign_in_no_account),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     TextButton(onClick = onCreateAccount) {
                         Text(stringResource(R.string.sign_in_create_account))
                     }

@@ -8,6 +8,8 @@ export const Collections = {
   members: "members",
   invites: "invites",
   inviteCodes: "inviteCodes",
+  chapters: "chapters",
+  files: "files",
 } as const;
 
 export type Role = "leader" | "member" | "adviser";

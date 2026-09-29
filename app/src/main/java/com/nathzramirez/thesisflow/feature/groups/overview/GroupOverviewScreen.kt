@@ -13,30 +13,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,23 +41,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nathzramirez.thesisflow.BuildConfig
 import com.nathzramirez.thesisflow.InviteLinks
 import com.nathzramirez.thesisflow.R
+import com.nathzramirez.thesisflow.designsystem.component.AuroraScaffold
+import com.nathzramirez.thesisflow.designsystem.component.AuroraTopBar
 import com.nathzramirez.thesisflow.designsystem.component.Avatar
+import com.nathzramirez.thesisflow.designsystem.component.CodeTiles
 import com.nathzramirez.thesisflow.designsystem.component.FullScreenLoading
+import com.nathzramirez.thesisflow.designsystem.component.GhostButton
+import com.nathzramirez.thesisflow.designsystem.component.GlassCard
+import com.nathzramirez.thesisflow.designsystem.component.HudLabel
+import com.nathzramirez.thesisflow.designsystem.component.ProgressRing
 import com.nathzramirez.thesisflow.designsystem.component.RoleBadge
+import com.nathzramirez.thesisflow.designsystem.component.SectionHeader
+import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
+import com.nathzramirez.thesisflow.navigation.GroupOverviewRoute
 import com.nathzramirez.thesisflow.domain.model.Group
 import com.nathzramirez.thesisflow.domain.model.Invite
 import com.nathzramirez.thesisflow.domain.model.Member
 import com.nathzramirez.thesisflow.domain.model.Role
+import com.nathzramirez.thesisflow.domain.model.ThesisProgress
 import com.nathzramirez.thesisflow.ui.messageRes
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -81,11 +83,14 @@ private sealed interface Confirmation {
     data object Delete : Confirmation
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupOverviewScreen(
+    route: GroupOverviewRoute,
     onBack: () -> Unit,
-    viewModel: GroupOverviewViewModel = hiltViewModel(),
+    onOpenChapters: () -> Unit,
+    viewModel: GroupOverviewViewModel = hiltViewModel<GroupOverviewViewModel, GroupOverviewViewModel.Factory> {
+        it.create(route)
+    },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -103,65 +108,53 @@ fun GroupOverviewScreen(
     }
 
     val group = state.group
-    Scaffold(
+    AuroraScaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(group?.name.orEmpty(), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back))
-                    }
-                },
-                actions = {
-                    if (group != null) {
-                        Box {
-                            IconButton(onClick = { menuOpen = true }) {
-                                Icon(Icons.Filled.MoreVert, stringResource(R.string.action_more))
-                            }
-                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            AuroraTopBar(title = "", onBack = onBack, actions = {
+                if (group != null) {
+                    Box {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(Icons.Filled.MoreVert, stringResource(R.string.action_more))
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.group_leave)) },
+                                onClick = {
+                                    menuOpen = false
+                                    confirmation = Confirmation.Leave
+                                },
+                            )
+                            if (group.myRole.canManageGroup) {
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.group_leave)) },
+                                    text = { Text(stringResource(R.string.group_delete), color = MaterialTheme.colorScheme.error) },
                                     onClick = {
                                         menuOpen = false
-                                        confirmation = Confirmation.Leave
+                                        confirmation = Confirmation.Delete
                                     },
                                 )
-                                if (group.myRole.canManageGroup) {
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                stringResource(R.string.group_delete),
-                                                color = MaterialTheme.colorScheme.error,
-                                            )
-                                        },
-                                        onClick = {
-                                            menuOpen = false
-                                            confirmation = Confirmation.Delete
-                                        },
-                                    )
-                                }
                             }
                         }
                     }
-                },
-            )
+                }
+            })
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (group == null) {
             FullScreenLoading(Modifier.padding(padding), message = stringResource(R.string.group_loading))
-            return@Scaffold
+            return@AuroraScaffold
         }
         LazyColumn(
             contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = padding.calculateTopPadding() + 8.dp,
-                bottom = padding.calculateBottomPadding() + 24.dp,
+                start = 20.dp,
+                end = 20.dp,
+                top = padding.calculateTopPadding(),
+                bottom = padding.calculateBottomPadding() + 32.dp,
             ),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item { GroupHeader(group) }
+            item { Hero(group) }
+            item { ChaptersCard(progress = state.progress, onClick = onOpenChapters) }
 
             if (group.myRole.canInvite) {
                 item {
@@ -188,22 +181,21 @@ fun GroupOverviewScreen(
                 }
             }
 
+            item { SectionHeader(stringResource(R.string.members_title, state.members.size)) }
             item {
-                Text(
-                    stringResource(R.string.members_title, state.members.size),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-            }
-            items(state.members, key = { it.uid }) { member ->
-                MemberRow(
-                    member = member,
-                    isMe = member.uid == state.myUid,
-                    canManage = group.myRole.canManageGroup && member.uid != state.myUid,
-                    enabled = !state.isBusy,
-                    onChangeRole = { role -> viewModel.changeRole(member, role) },
-                    onRemove = { confirmation = Confirmation.RemoveMember(member) },
-                )
+                GlassCard(contentPadding = PaddingValues(vertical = 6.dp)) {
+                    state.members.forEachIndexed { index, member ->
+                        if (index > 0) HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                        MemberRow(
+                            member = member,
+                            isMe = member.uid == state.myUid,
+                            canManage = group.myRole.canManageGroup && member.uid != state.myUid,
+                            enabled = !state.isBusy,
+                            onChangeRole = { role -> viewModel.changeRole(member, role) },
+                            onRemove = { confirmation = Confirmation.RemoveMember(member) },
+                        )
+                    }
+                }
             }
         }
     }
@@ -227,29 +219,51 @@ fun GroupOverviewScreen(
 }
 
 @Composable
-private fun GroupHeader(group: Group) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+private fun Hero(group: Group) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 4.dp)) {
+        HudLabel(listOf(group.course, group.school).filter { it.isNotBlank() }.joinToString(" · "))
+        Text(group.name, style = MaterialTheme.typography.headlineLarge)
+        Text(
+            group.thesisTitle.ifBlank { stringResource(R.string.groups_no_title) },
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            RoleBadge(group.myRole)
             Text(
-                group.thesisTitle.ifBlank { stringResource(R.string.groups_no_title) },
-                style = MaterialTheme.typography.titleLarge,
-            )
-            Text(
-                listOf(group.course, group.school).filter { it.isNotBlank() }.joinToString(" · "),
-                style = MaterialTheme.typography.bodyMedium,
+                pluralStringResource(R.plurals.groups_member_count, group.memberCount, group.memberCount),
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Text(
-                stringResource(
-                    when (group.myRole) {
-                        Role.LEADER -> R.string.group_you_are_leader
-                        Role.MEMBER -> R.string.group_you_are_member
-                        Role.ADVISER -> R.string.group_you_are_adviser
-                    },
-                ),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
+        }
+    }
+}
+
+/** The way into the chapter tracker, with overall progress at a glance. */
+@Composable
+private fun ChaptersCard(progress: ThesisProgress, onClick: () -> Unit) {
+    GlassCard(onClick = onClick, strong = true, modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+            ProgressRing(percent = progress.percent, size = 96.dp, strokeWidth = 8.dp)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                HudLabel(stringResource(R.string.chapters_overall))
+                Text(
+                    stringResource(R.string.chapters_progress, progress.approvedCount, progress.chapterCount),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.chapters_open),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = AuroraTheme.colors.gradientEnd,
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = AuroraTheme.colors.gradientEnd,
+                    )
+                }
+            }
         }
     }
 }
@@ -263,28 +277,30 @@ private fun InvitesCard(
     onCreate: (Role) -> Unit,
     onCopied: suspend () -> Unit,
 ) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.invites_title), style = MaterialTheme.typography.titleMedium)
-            InviteRow(
-                label = stringResource(R.string.invite_member_code),
-                groupName = group.name,
-                invite = invites[Role.MEMBER],
-                isCreating = creatingFor == Role.MEMBER,
-                enabled = enabled,
-                onCreate = { onCreate(Role.MEMBER) },
-                onCopied = onCopied,
-            )
-            HorizontalDivider()
-            InviteRow(
-                label = stringResource(R.string.invite_adviser_code),
-                groupName = group.name,
-                invite = invites[Role.ADVISER],
-                isCreating = creatingFor == Role.ADVISER,
-                enabled = enabled,
-                onCreate = { onCreate(Role.ADVISER) },
-                onCopied = onCopied,
-            )
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(stringResource(R.string.invites_title))
+        GlassCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                InviteRow(
+                    label = stringResource(R.string.invite_member_code),
+                    groupName = group.name,
+                    invite = invites[Role.MEMBER],
+                    isCreating = creatingFor == Role.MEMBER,
+                    enabled = enabled,
+                    onCreate = { onCreate(Role.MEMBER) },
+                    onCopied = onCopied,
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                InviteRow(
+                    label = stringResource(R.string.invite_adviser_code),
+                    groupName = group.name,
+                    invite = invites[Role.ADVISER],
+                    isCreating = creatingFor == Role.ADVISER,
+                    enabled = enabled,
+                    onCreate = { onCreate(Role.ADVISER) },
+                    onCopied = onCopied,
+                )
+            }
         }
     }
 }
@@ -304,49 +320,48 @@ private fun InviteRow(
     val scope = rememberCoroutineScope()
     val active = invite?.takeUnless { it.isExpired(Instant.now()) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, style = MaterialTheme.typography.labelLarge)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            HudLabel(label, modifier = Modifier.weight(1f))
+            if (isCreating) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                TextButton(onClick = onCreate, enabled = enabled) {
+                    Text(stringResource(if (active != null) R.string.invite_new else R.string.invite_create))
+                }
+            }
+        }
         if (active != null) {
-            Text(
-                active.code,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 28.sp,
-                letterSpacing = 4.sp,
-            )
+            CodeTiles(active.code)
             Text(
                 stringResource(R.string.invite_expires, expiryFormatter.format(active.expiresAt)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                GhostButton(
+                    text = stringResource(R.string.invite_share),
+                    onClick = { shareInvite(context, groupName, active.code) },
+                    icon = Icons.Filled.Share,
+                    modifier = Modifier.weight(1f),
+                )
+                GhostButton(
+                    text = stringResource(R.string.invite_copy),
+                    onClick = {
+                        scope.launch {
+                            clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(label, active.code)))
+                            onCopied()
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
         } else {
             Text(
                 stringResource(if (invite != null) R.string.invite_expired else R.string.invite_none),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (active != null) {
-                Button(onClick = { shareInvite(context, groupName, active.code) }) {
-                    Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(stringResource(R.string.invite_share), modifier = Modifier.padding(start = 8.dp))
-                }
-                OutlinedButton(onClick = {
-                    scope.launch {
-                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(label, active.code)))
-                        onCopied()
-                    }
-                }) {
-                    Text(stringResource(R.string.invite_copy))
-                }
-            }
-            if (isCreating) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-            } else {
-                TextButton(onClick = onCreate, enabled = enabled) {
-                    Text(stringResource(if (active != null) R.string.invite_new else R.string.invite_create))
-                }
-            }
         }
     }
 }
@@ -363,49 +378,58 @@ private fun MemberRow(
     var menuOpen by remember { mutableStateOf(false) }
     val name = member.displayName.ifBlank { stringResource(R.string.member_unnamed) }
 
-    ListItem(
-        headlineContent = { Text(if (isMe) stringResource(R.string.member_you, name) else name) },
-        leadingContent = { Avatar(name = name, photoUrl = member.photoUrl) },
-        supportingContent = { RoleBadge(member.role) },
-        trailingContent = if (canManage) {
-            {
-                Box {
-                    IconButton(onClick = { menuOpen = true }, enabled = enabled) {
-                        Icon(Icons.Filled.MoreVert, stringResource(R.string.action_more))
-                    }
-                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        // Advisers keep their role; students switch between leader and member.
-                        when (member.role) {
-                            Role.MEMBER -> DropdownMenuItem(
-                                text = { Text(stringResource(R.string.member_make_leader)) },
-                                onClick = {
-                                    menuOpen = false
-                                    onChangeRole(Role.LEADER)
-                                },
-                            )
-                            Role.LEADER -> DropdownMenuItem(
-                                text = { Text(stringResource(R.string.member_make_member)) },
-                                onClick = {
-                                    menuOpen = false
-                                    onChangeRole(Role.MEMBER)
-                                },
-                            )
-                            Role.ADVISER -> Unit
-                        }
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.member_remove), color = MaterialTheme.colorScheme.error) },
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Avatar(name = name, photoUrl = member.photoUrl)
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                if (isMe) stringResource(R.string.member_you, name) else name,
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            RoleBadge(member.role)
+        }
+        if (canManage) {
+            Box {
+                IconButton(onClick = { menuOpen = true }, enabled = enabled) {
+                    Icon(Icons.Filled.MoreVert, stringResource(R.string.action_more))
+                }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    // Advisers keep their role; students switch between leader and member.
+                    when (member.role) {
+                        Role.MEMBER -> DropdownMenuItem(
+                            text = { Text(stringResource(R.string.member_make_leader)) },
                             onClick = {
                                 menuOpen = false
-                                onRemove()
+                                onChangeRole(Role.LEADER)
                             },
                         )
+                        Role.LEADER -> DropdownMenuItem(
+                            text = { Text(stringResource(R.string.member_make_member)) },
+                            onClick = {
+                                menuOpen = false
+                                onChangeRole(Role.MEMBER)
+                            },
+                        )
+                        Role.ADVISER -> Unit
                     }
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.member_remove), color = MaterialTheme.colorScheme.error) },
+                        onClick = {
+                            menuOpen = false
+                            onRemove()
+                        },
+                    )
                 }
             }
-        } else {
-            null
-        },
-    )
+        }
+    }
 }
 
 @Composable

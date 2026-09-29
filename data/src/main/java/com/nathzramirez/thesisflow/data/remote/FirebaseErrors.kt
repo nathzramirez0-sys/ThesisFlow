@@ -9,12 +9,16 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.functions.FirebaseFunctionsException
+import com.google.firebase.storage.StorageException
 import com.nathzramirez.thesisflow.domain.result.AppResult
 import com.nathzramirez.thesisflow.domain.result.DomainError
 import kotlin.coroutines.cancellation.CancellationException
 
 /** Thrown inside [safeCall] when an operation needs a signed-in user and there is none. */
 internal class NotSignedInException : IllegalStateException("No signed-in user")
+
+/** The picked file couldn't be read: moved, deleted, or its permission expired. */
+internal class FileUnreadableException(cause: Throwable) : IllegalStateException(cause)
 
 /**
  * Runs [block] and turns any exception into a [DomainError]. This is the only place
@@ -37,6 +41,7 @@ internal fun logUnexpected(e: Exception) {
 
 internal fun Throwable.toDomainError(): DomainError = when (this) {
     is NotSignedInException -> DomainError.PermissionDenied
+    is FileUnreadableException -> DomainError.FileUnreadable
 
     // Weak password is a subclass of invalid credentials, so it must be checked first.
     is FirebaseAuthWeakPasswordException -> DomainError.WeakPassword
@@ -55,6 +60,13 @@ internal fun Throwable.toDomainError(): DomainError = when (this) {
         -> DomainError.Network
         FirebaseFirestoreException.Code.NOT_FOUND -> DomainError.NotFound
         else -> DomainError.Unknown(message)
+    }
+
+    is StorageException -> when (errorCode) {
+        StorageException.ERROR_NOT_AUTHORIZED, StorageException.ERROR_NOT_AUTHENTICATED -> DomainError.PermissionDenied
+        StorageException.ERROR_OBJECT_NOT_FOUND -> DomainError.NotFound
+        StorageException.ERROR_RETRY_LIMIT_EXCEEDED -> DomainError.Network
+        else -> if (isRecoverableException) DomainError.Network else DomainError.Unknown(message)
     }
 
     is FirebaseFunctionsException -> reasonFrom(details) ?: when (code) {
