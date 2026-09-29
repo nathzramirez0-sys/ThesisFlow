@@ -38,8 +38,10 @@ service firebase.storage {
       // A retried upload rewrites its own object; nobody can replace someone else's.
       allow update: if isMember(groupId) && validUpload(groupId)
         && resource.metadata.uploadedBy == request.auth.uid;
+      // Leaders may tidy up task attachments, but never an adviser's feedback files.
       allow delete: if isMember(groupId)
-        && (resource.metadata.uploadedBy == request.auth.uid || roleIn(groupId) == 'leader');
+        && (resource.metadata.uploadedBy == request.auth.uid
+          || (roleIn(groupId) == 'leader' && resource.metadata.kind == 'attachment'));
     }
   }
 }

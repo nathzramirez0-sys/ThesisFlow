@@ -3,8 +3,10 @@ package com.nathzramirez.thesisflow.data.di
 import android.content.Context
 import androidx.room.Room
 import com.nathzramirez.thesisflow.data.local.ThesisFlowDatabase
+import com.nathzramirez.thesisflow.data.local.dao.ActivityDao
 import com.nathzramirez.thesisflow.data.local.dao.ChapterDao
 import com.nathzramirez.thesisflow.data.local.dao.ChapterVersionDao
+import com.nathzramirez.thesisflow.data.local.dao.FeedbackDao
 import com.nathzramirez.thesisflow.data.local.dao.FileDao
 import com.nathzramirez.thesisflow.data.local.dao.GroupDao
 import com.nathzramirez.thesisflow.data.local.dao.MemberDao
@@ -60,4 +62,10 @@ object DatabaseModule {
 
     @Provides
     fun provideTaskCommentDao(database: ThesisFlowDatabase): TaskCommentDao = database.taskCommentDao()
+
+    @Provides
+    fun provideFeedbackDao(database: ThesisFlowDatabase): FeedbackDao = database.feedbackDao()
+
+    @Provides
+    fun provideActivityDao(database: ThesisFlowDatabase): ActivityDao = database.activityDao()
 }

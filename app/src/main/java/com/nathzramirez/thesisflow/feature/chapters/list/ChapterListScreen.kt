@@ -39,6 +39,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
@@ -57,6 +58,7 @@ import com.nathzramirez.thesisflow.designsystem.component.FormTextField
 import com.nathzramirez.thesisflow.designsystem.component.FullScreenLoading
 import com.nathzramirez.thesisflow.designsystem.component.GlassCard
 import com.nathzramirez.thesisflow.designsystem.component.GlowDot
+import com.nathzramirez.thesisflow.designsystem.component.GlowPill
 import com.nathzramirez.thesisflow.designsystem.component.GradientButton
 import com.nathzramirez.thesisflow.designsystem.component.GradientFab
 import com.nathzramirez.thesisflow.designsystem.component.HudLabel
@@ -134,6 +136,7 @@ fun ChapterListScreen(
                     TimelineRow(
                         chapter = chapter,
                         number = index + 1,
+                        openFeedback = state.openFeedback[chapter.id] ?: 0,
                         isFirst = index == 0,
                         isLast = index == state.chapters.lastIndex,
                         now = now,
@@ -198,6 +201,7 @@ private fun Header(state: ChapterListUiState) {
 private fun TimelineRow(
     chapter: Chapter,
     number: Int,
+    openFeedback: Int,
     isFirst: Boolean,
     isLast: Boolean,
     now: Instant,
@@ -262,6 +266,12 @@ private fun TimelineRow(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         StatusPill(chapter.status)
                         DeadlineText(chapter, now)
+                    }
+                    if (openFeedback > 0) {
+                        GlowPill(
+                            pluralStringResource(R.plurals.feedback_open_count, openFeedback, openFeedback),
+                            aurora.statusRevisions,
+                        )
                     }
                     if (chapter.hasPendingWrites) PendingSyncLabel()
                 }

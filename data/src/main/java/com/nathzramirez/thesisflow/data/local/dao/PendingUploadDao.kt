@@ -9,8 +9,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PendingUploadDao {
-    @Query("SELECT * FROM pending_uploads WHERE chapterId = :chapterId ORDER BY createdAt")
+    /** Drafts only; files on the chapter's feedback have their own query. */
+    @Query("SELECT * FROM pending_uploads WHERE chapterId = :chapterId AND kind = 'DRAFT' ORDER BY createdAt")
     fun observeForChapter(chapterId: String): Flow<List<PendingUploadEntity>>
+
+    @Query("SELECT * FROM pending_uploads WHERE chapterId = :chapterId AND kind = 'FEEDBACK' ORDER BY createdAt")
+    fun observeFeedbackFilesForChapter(chapterId: String): Flow<List<PendingUploadEntity>>
 
     @Query("SELECT * FROM pending_uploads WHERE taskId = :taskId ORDER BY createdAt")
     fun observeForTask(taskId: String): Flow<List<PendingUploadEntity>>

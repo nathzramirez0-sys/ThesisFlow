@@ -80,3 +80,16 @@ internal fun taskPriorityFromWire(value: String?): TaskPriority? = when (value) 
     "high" -> TaskPriority.HIGH
     else -> null
 }
+
+/** Activity entry types, as written by functions/src/activity.ts. */
+internal object ActivityTypes {
+    const val MEMBER_JOINED = "member_joined"
+    const val MEMBER_LEFT = "member_left"
+    const val CHAPTER_STATUS = "chapter_status"
+    const val DRAFT_UPLOADED = "draft_uploaded"
+    const val FEEDBACK_POSTED = "feedback_posted"
+    const val FEEDBACK_RESOLVED = "feedback_resolved"
+    const val FEEDBACK_REOPENED = "feedback_reopened"
+    const val TASK_CREATED = "task_created"
+    const val TASK_STATUS = "task_status"
+}

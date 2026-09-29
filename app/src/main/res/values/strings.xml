@@ -268,6 +268,74 @@
     <string name="comment_delete">Delete</string>
     <string name="comment_you">You</string>
 
+    <!-- Adviser feedback -->
+    <string name="feedback_title">Adviser feedback</string>
+    <string name="feedback_give">Give feedback</string>
+    <string name="feedback_filter_open">Open · %1$d</string>
+    <string name="feedback_filter_resolved">Resolved · %1$d</string>
+    <string name="feedback_none">No feedback yet. When your adviser reviews a draft, their comments show up here as a checklist.</string>
+    <string name="feedback_none_adviser">Nothing posted yet. Open a draft below, then tell the group what to improve.</string>
+    <string name="feedback_all_resolved">Every comment is resolved. Nice work.</string>
+    <string name="feedback_none_resolved">Nothing resolved yet.</string>
+    <string name="feedback_meta">%1$s · %2$s</string>
+    <string name="feedback_on_version">On v%1$d</string>
+    <string name="feedback_whole_chapter">Whole chapter</string>
+    <string name="feedback_resolved_by">Resolved by %1$s · %2$s</string>
+    <string name="feedback_resolve">Mark resolved</string>
+    <string name="feedback_reopen">Reopen</string>
+    <string name="feedback_attach">Attach a file</string>
+    <string name="feedback_composer_title">Give feedback</string>
+    <string name="feedback_about">About</string>
+    <string name="feedback_version_latest">v%1$d · latest</string>
+    <string name="field_feedback">Feedback</string>
+    <string name="field_feedback_hint">What should the group change, and where?</string>
+    <string name="feedback_attach_file">Attach a marked-up file</string>
+    <string name="feedback_remove_file">Remove file</string>
+    <string name="feedback_request_revisions">Ask for revisions</string>
+    <string name="feedback_request_revisions_body">Also moves this chapter to Revisions</string>
+    <string name="feedback_post">Post feedback</string>
+    <string name="feedback_posted">Feedback posted</string>
+    <string name="feedback_posted_without_file">Feedback posted, but the file couldn\'t be attached. Use Attach a file on your feedback to try again.</string>
+    <string name="feedback_delete_title">Delete this feedback?</string>
+    <string name="feedback_delete_body">The group won\'t see it anymore, and its files are deleted too.</string>
+    <plurals name="feedback_open_count">
+        <item quantity="one">%d open comment</item>
+        <item quantity="other">%d open comments</item>
+    </plurals>
+
+    <!-- Activity -->
+    <string name="activity_title">Recent activity</string>
+    <string name="activity_see_all">See all</string>
+    <string name="activity_screen_title">Activity</string>
+    <string name="activity_none">Nothing yet. Uploads, feedback and task updates will show up here.</string>
+    <string name="activity_kept_note">Showing the latest 100 updates.</string>
+    <string name="activity_someone">Someone</string>
+    <string name="activity_joined">%1$s joined as %2$s</string>
+    <string name="activity_left">%1$s is no longer in the group</string>
+    <string name="activity_chapter_status">%1$s moved “%2$s” to %3$s</string>
+    <string name="activity_chapter_approved">%1$s approved “%2$s”</string>
+    <string name="activity_draft_uploaded">%1$s uploaded v%3$d of “%2$s”</string>
+    <string name="activity_feedback_posted">%1$s left feedback on “%2$s”</string>
+    <string name="activity_feedback_on_version">%1$s left feedback on v%3$d of “%2$s”</string>
+    <string name="activity_feedback_resolved">%1$s resolved feedback on “%2$s”</string>
+    <string name="activity_feedback_reopened">%1$s reopened feedback on “%2$s”</string>
+    <string name="activity_task_created">%1$s added the task “%2$s”</string>
+    <string name="activity_task_status">%1$s moved “%2$s” to %3$s</string>
+    <string name="activity_task_done">%1$s finished “%2$s”</string>
+
+    <!-- Relative time -->
+    <string name="time_just_now">Just now</string>
+    <string name="time_today">Today</string>
+    <string name="time_yesterday">Yesterday</string>
+    <plurals name="time_minutes_ago">
+        <item quantity="one">%d min ago</item>
+        <item quantity="other">%d min ago</item>
+    </plurals>
+    <plurals name="time_hours_ago">
+        <item quantity="one">%d hour ago</item>
+        <item quantity="other">%d hours ago</item>
+    </plurals>
+
     <!-- Validation -->
     <string name="validation_required_email">Enter your email</string>
     <string name="validation_required_password">Enter your password</string>
@@ -287,6 +355,7 @@
     <string name="validation_required_chapter_title">Enter a chapter title</string>
     <string name="validation_required_task_title">Enter a task title</string>
     <string name="validation_required_comment">Write something first</string>
+    <string name="validation_required_feedback">Write your feedback first</string>
 
     <!-- Errors -->
     <string name="error_check_fields">Please check the highlighted fields.</string>

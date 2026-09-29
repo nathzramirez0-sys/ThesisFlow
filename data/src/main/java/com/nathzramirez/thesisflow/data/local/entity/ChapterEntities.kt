@@ -40,7 +40,7 @@ data class ChapterVersionEntity(
 )
 
 /** Every file in a group: drafts, task attachments and feedback files. */
-@Entity(tableName = "files", indices = [Index("groupId"), Index("chapterId")])
+@Entity(tableName = "files", indices = [Index("groupId"), Index("chapterId"), Index("feedbackId")])
 data class FileEntity(
     @PrimaryKey val id: String,
     val groupId: String,

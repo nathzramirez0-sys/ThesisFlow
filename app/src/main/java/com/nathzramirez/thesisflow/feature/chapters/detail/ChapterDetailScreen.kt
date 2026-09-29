@@ -83,13 +83,38 @@ fun ChapterDetailScreen(
     viewModel: ChapterDetailViewModel = hiltViewModel<ChapterDetailViewModel, ChapterDetailViewModel.Factory> {
         it.create(route)
     },
+    feedbackViewModel: ChapterFeedbackViewModel =
+        hiltViewModel<ChapterFeedbackViewModel, ChapterFeedbackViewModel.Factory> { it.create(route) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val feedback by feedbackViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val now = remember { Instant.now() }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) viewModel.onFilePicked(uri.toString())
+    }
+    val composerPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) feedbackViewModel.onComposerFilePicked(uri.toString())
+    }
+    val attachPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        feedbackViewModel.onAttachmentPicked(uri?.toString())
+    }
+    val feedbackActions = remember(feedbackViewModel, viewModel) {
+        FeedbackActions(
+            onFilter = feedbackViewModel::setFilter,
+            onGiveFeedback = feedbackViewModel::openComposer,
+            onResolve = { feedbackViewModel.setResolved(it, resolved = true) },
+            onReopen = { feedbackViewModel.setResolved(it, resolved = false) },
+            onAttach = { feedbackId ->
+                feedbackViewModel.startAttaching(feedbackId)
+                attachPicker.launch(UploadRules.pickerTypes.toTypedArray())
+            },
+            onDelete = { feedbackViewModel.askDelete(it.feedback) },
+            onOpenFile = viewModel::openFile,
+            onRetryUpload = { feedbackViewModel.retryUpload(it) },
+            onDiscardUpload = { feedbackViewModel.discardUpload(it) },
+        )
     }
 
     LaunchedEffect(state.isClosed) {
@@ -99,6 +124,23 @@ fun ChapterDetailScreen(
         val error = state.error ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(context.getString(error.messageRes()))
         viewModel.errorShown()
+    }
+    LaunchedEffect(feedback.error) {
+        val error = feedback.error ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(context.getString(error.messageRes()))
+        feedbackViewModel.errorShown()
+    }
+    LaunchedEffect(feedback.notice) {
+        val notice = feedback.notice ?: return@LaunchedEffect
+        feedbackViewModel.noticeShown()
+        snackbarHostState.showSnackbar(
+            context.getString(
+                when (notice) {
+                    FeedbackNotice.POSTED -> R.string.feedback_posted
+                    FeedbackNotice.POSTED_WITHOUT_FILE -> R.string.feedback_posted_without_file
+                },
+            ),
+        )
     }
     LaunchedEffect(state.fileToOpen) {
         val file = state.fileToOpen ?: return@LaunchedEffect
@@ -148,6 +190,13 @@ fun ChapterDetailScreen(
                     )
                 }
             }
+
+            feedbackSection(
+                state = feedback,
+                openingFileId = state.openingFileId,
+                now = now,
+                actions = feedbackActions,
+            )
 
             item { SectionHeader(stringResource(R.string.drafts_title), modifier = Modifier.padding(top = 10.dp)) }
             if (state.canUpload) {
@@ -207,6 +256,23 @@ fun ChapterDetailScreen(
             onPick = viewModel::setDeadline,
             onDismiss = viewModel::dismissDeadlinePicker,
         )
+    }
+    feedback.composer?.let { composer ->
+        FeedbackComposerSheet(
+            composer = composer,
+            versions = feedback.versions,
+            canRequestRevisions = feedback.canRequestRevisions,
+            onVersionChange = feedbackViewModel::onVersionChange,
+            onBodyChange = feedbackViewModel::onBodyChange,
+            onPickFile = { composerPicker.launch(UploadRules.pickerTypes.toTypedArray()) },
+            onRemoveFile = feedbackViewModel::removeComposerFile,
+            onRequestRevisionsChange = feedbackViewModel::onRequestRevisionsChange,
+            onPost = feedbackViewModel::post,
+            onDismiss = feedbackViewModel::dismissComposer,
+        )
+    }
+    if (feedback.confirmDelete != null) {
+        DeleteFeedbackDialog(onConfirm = feedbackViewModel::confirmDelete, onDismiss = feedbackViewModel::dismissDelete)
     }
     state.draft?.let { draft ->
         UploadDraftDialog(

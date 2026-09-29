@@ -50,6 +50,8 @@ data class PendingUpload(
     val fileId: String,
     val groupId: String,
     val chapterId: String?,
+    /** Set for files on adviser feedback, so each shows under its feedback. */
+    val feedbackId: String?,
     val fileName: String,
     val sizeBytes: Long,
     val state: UploadState,

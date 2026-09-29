@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -17,6 +18,8 @@ import com.nathzramirez.thesisflow.designsystem.component.FullScreenLoading
 import com.nathzramirez.thesisflow.designsystem.component.GhostButton
 import com.nathzramirez.thesisflow.designsystem.component.GradientButton
 import com.nathzramirez.thesisflow.designsystem.component.MessageScreen
+import com.nathzramirez.thesisflow.feature.activity.ActivityFeedScreen
+import com.nathzramirez.thesisflow.feature.activity.ActivityLink
 import com.nathzramirez.thesisflow.feature.auth.LoginScreen
 import com.nathzramirez.thesisflow.feature.chapters.detail.ChapterDetailScreen
 import com.nathzramirez.thesisflow.feature.chapters.list.ChapterListScreen
@@ -129,6 +132,16 @@ private fun MainNavHost(pendingInviteCode: String?, onInviteHandled: () -> Unit)
                 onBack = { navController.popBackStack() },
                 onOpenChapters = { navController.navigate(ChapterListRoute(route.groupId)) },
                 onOpenTasks = { navController.navigate(TaskBoardRoute(route.groupId)) },
+                onOpenActivity = { navController.navigate(ActivityFeedRoute(route.groupId)) },
+                onOpenActivityLink = { link -> navController.openActivityLink(route.groupId, link) },
+            )
+        }
+        composable<ActivityFeedRoute> { entry ->
+            val route = entry.toRoute<ActivityFeedRoute>()
+            ActivityFeedScreen(
+                route = route,
+                onBack = { navController.popBackStack() },
+                onOpen = { link -> navController.openActivityLink(route.groupId, link) },
             )
         }
         composable<ChapterListRoute> { entry ->
@@ -188,4 +201,9 @@ private fun MainNavHost(pendingInviteCode: String?, onInviteHandled: () -> Unit)
             ProfileScreen(onBack = { navController.popBackStack() })
         }
     }
+}
+
+private fun NavController.openActivityLink(groupId: String, link: ActivityLink) = when (link) {
+    is ActivityLink.ToChapter -> navigate(ChapterDetailRoute(groupId, link.chapterId, link.number))
+    is ActivityLink.ToTask -> navigate(TaskDetailRoute(groupId, link.taskId))
 }

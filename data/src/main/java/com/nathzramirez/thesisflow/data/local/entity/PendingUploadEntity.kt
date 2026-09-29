@@ -21,6 +21,8 @@ data class PendingUploadEntity(
     val groupId: String,
     val chapterId: String?,
     val taskId: String?,
+    /** Set for files on adviser feedback; [chapterId] is then the feedback's chapter. */
+    val feedbackId: String?,
     val kind: FileKind,
     /** Copy in app storage, so the upload doesn't depend on the picker's temporary permission. */
     val cachedPath: String,

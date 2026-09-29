@@ -1,13 +1,17 @@
 package com.nathzramirez.thesisflow.data.di
 
+import com.nathzramirez.thesisflow.data.repository.ActivityRepositoryImpl
 import com.nathzramirez.thesisflow.data.repository.AuthRepositoryImpl
 import com.nathzramirez.thesisflow.data.repository.ChapterRepositoryImpl
+import com.nathzramirez.thesisflow.data.repository.FeedbackRepositoryImpl
 import com.nathzramirez.thesisflow.data.repository.FileRepositoryImpl
 import com.nathzramirez.thesisflow.data.repository.GroupRepositoryImpl
 import com.nathzramirez.thesisflow.data.repository.TaskRepositoryImpl
 import com.nathzramirez.thesisflow.data.repository.UserRepositoryImpl
+import com.nathzramirez.thesisflow.domain.repository.ActivityRepository
 import com.nathzramirez.thesisflow.domain.repository.AuthRepository
 import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
+import com.nathzramirez.thesisflow.domain.repository.FeedbackRepository
 import com.nathzramirez.thesisflow.domain.repository.FileRepository
 import com.nathzramirez.thesisflow.domain.repository.GroupRepository
 import com.nathzramirez.thesisflow.domain.repository.TaskRepository
@@ -42,4 +46,10 @@ internal abstract class RepositoryModule {
 
     @Binds
     abstract fun bindTaskRepository(impl: TaskRepositoryImpl): TaskRepository
+
+    @Binds
+    abstract fun bindFeedbackRepository(impl: FeedbackRepositoryImpl): FeedbackRepository
+
+    @Binds
+    abstract fun bindActivityRepository(impl: ActivityRepositoryImpl): ActivityRepository
 }

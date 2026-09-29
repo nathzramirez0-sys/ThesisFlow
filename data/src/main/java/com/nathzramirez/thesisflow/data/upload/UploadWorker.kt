@@ -7,6 +7,7 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
@@ -17,6 +18,7 @@ import com.nathzramirez.thesisflow.data.local.dao.PendingUploadDao
 import com.nathzramirez.thesisflow.data.local.entity.PendingUploadEntity
 import com.nathzramirez.thesisflow.data.local.entity.UploadFailure
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Chapters
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Feedback
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Files
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Groups
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Storage
@@ -109,10 +111,7 @@ class UploadWorker @AssistedInject constructor(
         reporter.cancel()
     }
 
-    /**
-     * Drafts need a transaction: the version number comes from the chapter, and two
-     * members uploading at once must get v3 and v4, never two v3s.
-     */
+    /** Writes the file's record, plus a version for drafts. */
     private suspend fun recordInFirestore(upload: PendingUploadEntity) {
         val group = firestore.collection(Groups.COLLECTION).document(upload.groupId)
         val fileRef = group.collection(Files.COLLECTION).document(upload.fileId)
@@ -124,21 +123,44 @@ class UploadWorker @AssistedInject constructor(
             Files.KIND to upload.kind.toWire(),
             Files.CHAPTER_ID to upload.chapterId,
             Files.TASK_ID to upload.taskId,
-            Files.FEEDBACK_ID to null,
+            Files.FEEDBACK_ID to upload.feedbackId,
             Files.UPLOADED_BY to upload.uploadedBy,
             Files.UPLOADED_AT to FieldValue.serverTimestamp(),
         )
 
-        if (upload.kind != FileKind.DRAFT) {
-            // The rules refuse an attachment whose task is gone; say so clearly instead.
-            val taskId = checkNotNull(upload.taskId)
-            if (!group.collection(Tasks.COLLECTION).document(taskId).get().await().exists()) {
-                throw TargetDeletedException()
-            }
-            fileRef.set(fileFields).await()
-            return
+        when (upload.kind) {
+            FileKind.DRAFT -> recordDraft(upload, group, fileRef, fileFields)
+            FileKind.ATTACHMENT ->
+                recordFile(fileRef, fileFields, group.collection(Tasks.COLLECTION).document(checkNotNull(upload.taskId)))
+            FileKind.FEEDBACK -> recordFile(
+                fileRef,
+                fileFields,
+                group.collection(Chapters.COLLECTION).document(checkNotNull(upload.chapterId))
+                    .collection(Feedback.COLLECTION).document(checkNotNull(upload.feedbackId)),
+            )
         }
+    }
 
+    /**
+     * A file that hangs off one document (a task, or a piece of feedback). The
+     * rules refuse the record once that document is gone; checking first turns
+     * that into a clear "deleted" message instead of "permission denied".
+     */
+    private suspend fun recordFile(fileRef: DocumentReference, fileFields: Map<String, Any?>, owner: DocumentReference) {
+        if (!owner.get().await().exists()) throw TargetDeletedException()
+        fileRef.set(fileFields).await()
+    }
+
+    /**
+     * Drafts need a transaction: the version number comes from the chapter, and two
+     * members uploading at once must get v3 and v4, never two v3s.
+     */
+    private suspend fun recordDraft(
+        upload: PendingUploadEntity,
+        group: DocumentReference,
+        fileRef: DocumentReference,
+        fileFields: Map<String, Any?>,
+    ) {
         val chapterRef = group.collection(Chapters.COLLECTION).document(checkNotNull(upload.chapterId))
         firestore.runTransaction { transaction ->
             if (transaction.get(fileRef).exists()) return@runTransaction // An earlier attempt got this far.
@@ -200,7 +222,7 @@ class UploadWorker @AssistedInject constructor(
     private fun storagePath(upload: PendingUploadEntity) =
         Storage.filePath(upload.groupId, upload.fileId, upload.fileName)
 
-    private class TargetDeletedException : IllegalStateException("The chapter or task was deleted")
+    private class TargetDeletedException : IllegalStateException("The chapter, task or feedback was deleted")
 
     companion object {
         const val KEY_FILE_ID = "fileId"

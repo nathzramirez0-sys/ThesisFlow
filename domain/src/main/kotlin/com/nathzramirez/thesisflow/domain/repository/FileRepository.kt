@@ -26,9 +26,13 @@ interface FileRepository {
         file: LocalFileInfo,
     ): AppResult<Unit>
 
+    /** Drafts of this chapter still on their way. */
     fun observePendingForChapter(chapterId: String): Flow<List<PendingUpload>>
 
     fun observePendingForTask(taskId: String): Flow<List<PendingUpload>>
+
+    /** Files still on their way to feedback on this chapter; each carries its feedback id. */
+    fun observePendingFeedbackFiles(chapterId: String): Flow<List<PendingUpload>>
 
     /** Newest first. */
     fun observeTaskAttachments(taskId: String): Flow<List<FileAttachment>>

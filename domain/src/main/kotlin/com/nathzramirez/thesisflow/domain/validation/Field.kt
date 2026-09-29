@@ -15,4 +15,5 @@ enum class Field {
     TASK_TITLE,
     TASK_DESCRIPTION,
     COMMENT,
+    FEEDBACK,
 }

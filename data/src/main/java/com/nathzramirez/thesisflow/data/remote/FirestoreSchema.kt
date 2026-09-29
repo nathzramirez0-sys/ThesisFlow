@@ -126,6 +126,39 @@ internal object FirestoreSchema {
         const val CREATED_AT = "createdAt"
     }
 
+    /**
+     * `groups/{groupId}/chapters/{chapterId}/feedback/{feedbackId}`. Like versions,
+     * the ids are repeated inside so one collection-group query syncs a group's feedback.
+     */
+    object Feedback {
+        const val COLLECTION = "feedback"
+        const val GROUP_ID = "groupId"
+        const val CHAPTER_ID = "chapterId"
+        const val BODY = "body"
+        const val AUTHOR_ID = "authorId"
+        const val AUTHOR_NAME = "authorName"
+        const val AUTHOR_ROLE = "authorRole"
+        const val VERSION_NUMBER = "versionNumber"
+        const val RESOLVED = "resolved"
+        const val RESOLVED_BY = "resolvedBy"
+        const val RESOLVED_AT = "resolvedAt"
+        const val CREATED_AT = "createdAt"
+        const val UPDATED_AT = "updatedAt"
+        const val UPDATED_BY = "updatedBy"
+    }
+
+    /** `groups/{groupId}/activity/{activityId}`, written only by Cloud Functions. */
+    object Activity {
+        const val COLLECTION = "activity"
+        const val TYPE = "type"
+        const val ACTOR_ID = "actorId"
+        const val ACTOR_NAME = "actorName"
+        const val TARGET_ID = "targetId"
+        const val TARGET_TITLE = "targetTitle"
+        const val DETAIL = "detail"
+        const val CREATED_AT = "createdAt"
+    }
+
     /** Cloud Storage layout; storage.rules matches the same path. */
     object Storage {
         const val METADATA_UPLOADED_BY = "uploadedBy"

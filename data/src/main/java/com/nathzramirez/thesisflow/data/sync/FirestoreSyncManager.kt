@@ -10,24 +10,30 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.snapshots
 import com.nathzramirez.thesisflow.data.di.ApplicationScope
+import com.nathzramirez.thesisflow.data.local.dao.ActivityDao
 import com.nathzramirez.thesisflow.data.local.dao.ChapterDao
 import com.nathzramirez.thesisflow.data.local.dao.ChapterVersionDao
+import com.nathzramirez.thesisflow.data.local.dao.FeedbackDao
 import com.nathzramirez.thesisflow.data.local.dao.FileDao
 import com.nathzramirez.thesisflow.data.local.dao.GroupDao
 import com.nathzramirez.thesisflow.data.local.dao.MemberDao
 import com.nathzramirez.thesisflow.data.local.dao.TaskCommentDao
 import com.nathzramirez.thesisflow.data.local.dao.TaskDao
 import com.nathzramirez.thesisflow.data.local.dao.UserDao
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Activity
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Chapters
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Comments
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Feedback
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Files
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Groups
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Members
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Tasks
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Users
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Versions
+import com.nathzramirez.thesisflow.data.remote.toActivityEntity
 import com.nathzramirez.thesisflow.data.remote.toChapterEntity
 import com.nathzramirez.thesisflow.data.remote.toCommentEntity
+import com.nathzramirez.thesisflow.data.remote.toFeedbackEntity
 import com.nathzramirez.thesisflow.data.remote.toFileEntity
 import com.nathzramirez.thesisflow.data.remote.toGroupEntity
 import com.nathzramirez.thesisflow.data.remote.toMemberEntity
@@ -35,6 +41,7 @@ import com.nathzramirez.thesisflow.data.remote.toTaskRow
 import com.nathzramirez.thesisflow.data.remote.toUserEntity
 import com.nathzramirez.thesisflow.data.remote.toVersionEntity
 import com.nathzramirez.thesisflow.data.remote.uidFlow
+import com.nathzramirez.thesisflow.domain.repository.ActivityRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -61,8 +68,8 @@ import kotlin.math.min
  *
  * The UI only ever reads Room. This class keeps snapshot listeners open for the
  * signed-in user's profile, their groups, and for each group its members,
- * chapters, chapter versions, files, tasks and task comments, and writes every
- * change into Room.
+ * chapters, chapter versions, files, tasks, task comments, adviser feedback and
+ * recent activity, and writes every change into Room.
  * Firestore raises listeners for local writes too, so Room reflects the user's
  * own edits at once, even offline.
  *
@@ -81,6 +88,8 @@ class FirestoreSyncManager @Inject constructor(
     private val fileDao: FileDao,
     private val taskDao: TaskDao,
     private val commentDao: TaskCommentDao,
+    private val feedbackDao: FeedbackDao,
+    private val activityDao: ActivityDao,
     @param:ApplicationScope private val scope: CoroutineScope,
 ) {
     private var job: Job? = null
@@ -159,6 +168,19 @@ class FirestoreSyncManager @Inject constructor(
                 map = { it.toCommentEntity() },
                 upsert = commentDao::upsertAll,
                 replace = { commentDao.replaceForGroup(groupId, it) }),
+            syncQuery(uid, "feedback of $groupId",
+                firestore.collectionGroup(Feedback.COLLECTION).whereEqualTo(Feedback.GROUP_ID, groupId),
+                map = { it.toFeedbackEntity() },
+                upsert = feedbackDao::upsertAll,
+                replace = { feedbackDao.replaceForGroup(groupId, it) }),
+            // Only the latest entries: the feed is for "what's new", and the table stays small.
+            syncQuery(uid, "activity of $groupId",
+                group.collection(Activity.COLLECTION)
+                    .orderBy(Activity.CREATED_AT, Query.Direction.DESCENDING)
+                    .limit(ActivityRepository.MAX_CACHED.toLong()),
+                map = { it.toActivityEntity(groupId) },
+                upsert = activityDao::upsertAll,
+                replace = { activityDao.replaceForGroup(groupId, it) }),
         )
     }
 

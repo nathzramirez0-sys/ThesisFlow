@@ -4,8 +4,10 @@ import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.nathzramirez.thesisflow.data.local.dao.ActivityDao
 import com.nathzramirez.thesisflow.data.local.dao.ChapterDao
 import com.nathzramirez.thesisflow.data.local.dao.ChapterVersionDao
+import com.nathzramirez.thesisflow.data.local.dao.FeedbackDao
 import com.nathzramirez.thesisflow.data.local.dao.FileDao
 import com.nathzramirez.thesisflow.data.local.dao.GroupDao
 import com.nathzramirez.thesisflow.data.local.dao.MemberDao
@@ -13,8 +15,10 @@ import com.nathzramirez.thesisflow.data.local.dao.PendingUploadDao
 import com.nathzramirez.thesisflow.data.local.dao.TaskCommentDao
 import com.nathzramirez.thesisflow.data.local.dao.TaskDao
 import com.nathzramirez.thesisflow.data.local.dao.UserDao
+import com.nathzramirez.thesisflow.data.local.entity.ActivityEntity
 import com.nathzramirez.thesisflow.data.local.entity.ChapterEntity
 import com.nathzramirez.thesisflow.data.local.entity.ChapterVersionEntity
+import com.nathzramirez.thesisflow.data.local.entity.FeedbackEntity
 import com.nathzramirez.thesisflow.data.local.entity.FileEntity
 import com.nathzramirez.thesisflow.data.local.entity.GroupEntity
 import com.nathzramirez.thesisflow.data.local.entity.MemberEntity
@@ -42,12 +46,15 @@ import com.nathzramirez.thesisflow.data.local.entity.UserEntity
         TaskEntity::class,
         TaskAssigneeEntity::class,
         TaskCommentEntity::class,
+        FeedbackEntity::class,
+        ActivityEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
+        AutoMigration(from = 3, to = 4),
     ],
 )
 @TypeConverters(Converters::class)
@@ -61,4 +68,6 @@ abstract class ThesisFlowDatabase : RoomDatabase() {
     abstract fun pendingUploadDao(): PendingUploadDao
     abstract fun taskDao(): TaskDao
     abstract fun taskCommentDao(): TaskCommentDao
+    abstract fun feedbackDao(): FeedbackDao
+    abstract fun activityDao(): ActivityDao
 }

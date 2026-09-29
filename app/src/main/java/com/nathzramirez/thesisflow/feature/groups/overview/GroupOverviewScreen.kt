@@ -63,6 +63,9 @@ import com.nathzramirez.thesisflow.designsystem.component.ProgressRing
 import com.nathzramirez.thesisflow.designsystem.component.RoleBadge
 import com.nathzramirez.thesisflow.designsystem.component.SectionHeader
 import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
+import com.nathzramirez.thesisflow.feature.activity.ActivityEntry
+import com.nathzramirez.thesisflow.feature.activity.ActivityLink
+import com.nathzramirez.thesisflow.feature.activity.ActivityRow
 import com.nathzramirez.thesisflow.navigation.GroupOverviewRoute
 import com.nathzramirez.thesisflow.domain.model.Group
 import com.nathzramirez.thesisflow.domain.model.Invite
@@ -90,6 +93,8 @@ fun GroupOverviewScreen(
     onBack: () -> Unit,
     onOpenChapters: () -> Unit,
     onOpenTasks: () -> Unit,
+    onOpenActivity: () -> Unit,
+    onOpenActivityLink: (ActivityLink) -> Unit,
     viewModel: GroupOverviewViewModel = hiltViewModel<GroupOverviewViewModel, GroupOverviewViewModel.Factory> {
         it.create(route)
     },
@@ -156,8 +161,15 @@ fun GroupOverviewScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item { Hero(group) }
-            item { ChaptersCard(progress = state.progress, onClick = onOpenChapters) }
+            item { ChaptersCard(progress = state.progress, openFeedback = state.openFeedback, onClick = onOpenChapters) }
             item { TasksCard(summary = state.tasks, onClick = onOpenTasks) }
+            item {
+                RecentActivityCard(
+                    entries = state.recentActivity,
+                    onOpen = onOpenActivityLink,
+                    onSeeAll = onOpenActivity,
+                )
+            }
 
             if (group.myRole.canInvite) {
                 item {
@@ -244,7 +256,7 @@ private fun Hero(group: Group) {
 
 /** The way into the chapter tracker, with overall progress at a glance. */
 @Composable
-private fun ChaptersCard(progress: ThesisProgress, onClick: () -> Unit) {
+private fun ChaptersCard(progress: ThesisProgress, openFeedback: Int, onClick: () -> Unit) {
     GlassCard(onClick = onClick, strong = true, modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
             ProgressRing(percent = progress.percent, size = 96.dp, strokeWidth = 8.dp)
@@ -254,6 +266,12 @@ private fun ChaptersCard(progress: ThesisProgress, onClick: () -> Unit) {
                     stringResource(R.string.chapters_progress, progress.approvedCount, progress.chapterCount),
                     style = MaterialTheme.typography.titleLarge,
                 )
+                if (openFeedback > 0) {
+                    GlowPill(
+                        pluralStringResource(R.plurals.feedback_open_count, openFeedback, openFeedback),
+                        AuroraTheme.colors.statusRevisions,
+                    )
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         stringResource(R.string.chapters_open),
@@ -266,6 +284,33 @@ private fun ChaptersCard(progress: ThesisProgress, onClick: () -> Unit) {
                         tint = AuroraTheme.colors.gradientEnd,
                     )
                 }
+            }
+        }
+    }
+}
+
+/** The latest few things that happened, each linking to its chapter or task. */
+@Composable
+private fun RecentActivityCard(entries: List<ActivityEntry>, onOpen: (ActivityLink) -> Unit, onSeeAll: () -> Unit) {
+    val now = remember { Instant.now() }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(stringResource(R.string.activity_title)) {
+            if (entries.isNotEmpty()) TextButton(onClick = onSeeAll) { Text(stringResource(R.string.activity_see_all)) }
+        }
+        GlassCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 4.dp)) {
+            if (entries.isEmpty()) {
+                Text(
+                    stringResource(R.string.activity_none),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                )
+            }
+            entries.forEachIndexed { index, entry ->
+                if (index > 0) {
+                    HorizontalDivider(Modifier.padding(start = 64.dp, end = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                ActivityRow(entry = entry, now = now, onOpen = onOpen)
             }
         }
     }

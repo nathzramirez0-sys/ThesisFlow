@@ -13,4 +13,9 @@ sealed interface UploadTarget {
     data class TaskAttachment(val taskId: String) : UploadTarget {
         override val kind get() = FileKind.ATTACHMENT
     }
+
+    /** A file on the adviser's own feedback, e.g. a marked-up copy of the draft. */
+    data class FeedbackFile(val chapterId: String, val feedbackId: String) : UploadTarget {
+        override val kind get() = FileKind.FEEDBACK
+    }
 }

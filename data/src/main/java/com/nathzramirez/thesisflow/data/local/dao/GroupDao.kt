@@ -53,6 +53,8 @@ interface GroupDao {
         deleteOrphanTasks()
         deleteOrphanTaskAssignees()
         deleteOrphanTaskComments()
+        deleteOrphanFeedback()
+        deleteOrphanActivity()
     }
 
     @Query("DELETE FROM groups WHERE id = :groupId")
@@ -88,4 +90,10 @@ interface GroupDao {
 
     @Query("DELETE FROM task_comments WHERE groupId NOT IN (SELECT id FROM groups)")
     suspend fun deleteOrphanTaskComments()
+
+    @Query("DELETE FROM feedback WHERE groupId NOT IN (SELECT id FROM groups)")
+    suspend fun deleteOrphanFeedback()
+
+    @Query("DELETE FROM activity WHERE groupId NOT IN (SELECT id FROM groups)")
+    suspend fun deleteOrphanActivity()
 }

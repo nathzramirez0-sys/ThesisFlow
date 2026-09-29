@@ -9,14 +9,18 @@ import com.nathzramirez.thesisflow.domain.model.Member
 import com.nathzramirez.thesisflow.domain.model.Role
 import com.nathzramirez.thesisflow.domain.model.TaskStatus
 import com.nathzramirez.thesisflow.domain.model.ThesisProgress
+import com.nathzramirez.thesisflow.domain.repository.ActivityRepository
 import com.nathzramirez.thesisflow.domain.repository.AuthRepository
 import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
+import com.nathzramirez.thesisflow.domain.repository.FeedbackRepository
 import com.nathzramirez.thesisflow.domain.repository.TaskRepository
 import com.nathzramirez.thesisflow.domain.repository.GroupRepository
 import com.nathzramirez.thesisflow.domain.result.AppResult
 import com.nathzramirez.thesisflow.domain.result.DomainError
 import com.nathzramirez.thesisflow.domain.usecase.group.ChangeMemberRoleUseCase
 import com.nathzramirez.thesisflow.domain.usecase.group.LeaveGroupUseCase
+import com.nathzramirez.thesisflow.feature.activity.ActivityEntry
+import com.nathzramirez.thesisflow.feature.activity.linkActivities
 import com.nathzramirez.thesisflow.navigation.GroupOverviewRoute
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -43,6 +47,10 @@ data class GroupOverviewUiState(
     val invites: Map<Role, Invite> = emptyMap(),
     val progress: ThesisProgress = ThesisProgress(0, 0, 0),
     val tasks: TaskSummary = TaskSummary(),
+    /** Feedback no one has resolved yet, across all chapters. */
+    val openFeedback: Int = 0,
+    /** The latest few entries; the full feed has its own screen. */
+    val recentActivity: List<ActivityEntry> = emptyList(),
     val myUid: String? = null,
     val isBusy: Boolean = false,
     /** The invite role whose code is being generated, to show a spinner on that row. */
@@ -74,6 +82,8 @@ class GroupOverviewViewModel @AssistedInject constructor(
     private val groupRepository: GroupRepository,
     chapterRepository: ChapterRepository,
     taskRepository: TaskRepository,
+    feedbackRepository: FeedbackRepository,
+    activityRepository: ActivityRepository,
     private val changeMemberRole: ChangeMemberRoleUseCase,
     private val leaveGroup: LeaveGroupUseCase,
 ) : ViewModel() {
@@ -100,9 +110,22 @@ class GroupOverviewViewModel @AssistedInject constructor(
 
     private val myUid = authRepository.authState.map { (it as? AuthState.SignedIn)?.uid }
 
-    private val progress = chapterRepository.observeChapters(groupId).map(ThesisProgress::of)
+    private val chapters = chapterRepository.observeChapters(groupId)
 
-    private val taskSummary = combine(taskRepository.observeTasks(groupId), myUid) { tasks, uid ->
+    private val tasks = taskRepository.observeTasks(groupId)
+
+    private val progress = chapters.map(ThesisProgress::of)
+
+    private val openFeedback = feedbackRepository.observeOpenCounts(groupId).map { counts -> counts.values.sum() }
+
+    private val recentActivity = combine(
+        activityRepository.observeRecent(groupId, limit = RECENT_ACTIVITY),
+        chapters,
+        tasks,
+        ::linkActivities,
+    )
+
+    private val taskSummary = combine(tasks, myUid) { tasks, uid ->
         val now = Instant.now()
         val open = tasks.filter { it.status != TaskStatus.DONE }
         TaskSummary(
@@ -133,6 +156,8 @@ class GroupOverviewViewModel @AssistedInject constructor(
         )
     }.combine(progress) { state, progress -> state.copy(progress = progress) }
         .combine(taskSummary) { state, tasks -> state.copy(tasks = tasks) }
+        .combine(openFeedback) { state, open -> state.copy(openFeedback = open) }
+        .combine(recentActivity) { state, activity -> state.copy(recentActivity = activity) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GroupOverviewUiState())
 
     fun createInvite(role: Role) = runAction(inviteRole = role) { groupRepository.createInvite(groupId, role) }
@@ -165,5 +190,9 @@ class GroupOverviewViewModel @AssistedInject constructor(
                 )
             }
         }
+    }
+
+    private companion object {
+        const val RECENT_ACTIVITY = 5
     }
 }

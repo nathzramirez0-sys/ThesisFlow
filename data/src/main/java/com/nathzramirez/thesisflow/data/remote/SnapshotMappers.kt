@@ -1,8 +1,10 @@
 package com.nathzramirez.thesisflow.data.remote
 
 import com.google.firebase.firestore.DocumentSnapshot
+import com.nathzramirez.thesisflow.data.local.entity.ActivityEntity
 import com.nathzramirez.thesisflow.data.local.entity.ChapterEntity
 import com.nathzramirez.thesisflow.data.local.entity.ChapterVersionEntity
+import com.nathzramirez.thesisflow.data.local.entity.FeedbackEntity
 import com.nathzramirez.thesisflow.data.local.entity.FileEntity
 import com.nathzramirez.thesisflow.data.local.entity.GroupEntity
 import com.nathzramirez.thesisflow.data.local.entity.MemberEntity
@@ -11,8 +13,10 @@ import com.nathzramirez.thesisflow.data.local.entity.TaskCommentEntity
 import com.nathzramirez.thesisflow.data.local.entity.TaskEntity
 import com.nathzramirez.thesisflow.data.local.entity.TaskRow
 import com.nathzramirez.thesisflow.data.local.entity.UserEntity
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Activity
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Chapters
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Comments
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Feedback
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Files
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Groups
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Invites
@@ -166,6 +170,41 @@ internal fun DocumentSnapshot.toCommentEntity(): TaskCommentEntity? {
         authorName = getString(Comments.AUTHOR_NAME).orEmpty(),
         createdAt = instant(Comments.CREATED_AT),
         hasPendingWrites = metadata.hasPendingWrites(),
+    )
+}
+
+internal fun DocumentSnapshot.toFeedbackEntity(): FeedbackEntity? {
+    if (!exists()) return null
+    return FeedbackEntity(
+        id = id,
+        groupId = getString(Feedback.GROUP_ID) ?: return null,
+        chapterId = getString(Feedback.CHAPTER_ID) ?: return null,
+        body = getString(Feedback.BODY).orEmpty(),
+        authorId = getString(Feedback.AUTHOR_ID).orEmpty(),
+        authorName = getString(Feedback.AUTHOR_NAME).orEmpty(),
+        authorRole = roleFromWire(getString(Feedback.AUTHOR_ROLE)) ?: return null,
+        versionNumber = getLong(Feedback.VERSION_NUMBER)?.toInt(),
+        resolved = getBoolean(Feedback.RESOLVED) ?: false,
+        resolvedBy = getString(Feedback.RESOLVED_BY),
+        resolvedAt = instant(Feedback.RESOLVED_AT),
+        createdAt = instant(Feedback.CREATED_AT),
+        hasPendingWrites = metadata.hasPendingWrites(),
+    )
+}
+
+/** The type stays a string here; unknown types are filtered out when read, not when synced. */
+internal fun DocumentSnapshot.toActivityEntity(groupId: String): ActivityEntity? {
+    if (!exists()) return null
+    return ActivityEntity(
+        id = id,
+        groupId = groupId,
+        type = getString(Activity.TYPE) ?: return null,
+        actorId = getString(Activity.ACTOR_ID).orEmpty(),
+        actorName = getString(Activity.ACTOR_NAME).orEmpty(),
+        targetId = getString(Activity.TARGET_ID),
+        targetTitle = getString(Activity.TARGET_TITLE).orEmpty(),
+        detail = getString(Activity.DETAIL),
+        createdAt = instant(Activity.CREATED_AT),
     )
 }
 

@@ -2,8 +2,9 @@
 
 A thesis and group-project manager for college students in the Philippines. Groups track who is doing what, which chapters are done, what the adviser said, and what is due next.
 
-> **Status:** in development. Phases 1–3 of 7 are done: accounts and groups, the chapter tracker with
-> versioned drafts, and tasks with a list and kanban board, attachments and comments. All of it works offline.
+> **Status:** in development. Phases 1–4 of 7 are done: accounts and groups, the chapter tracker with
+> versioned drafts, tasks with a list and kanban board, and adviser feedback with a group activity feed.
+> All of it works offline.
 
 ## Stack
 
@@ -16,8 +17,8 @@ Kotlin · Jetpack Compose (Material 3) · MVVM + Clean Architecture · Hilt · C
 | `domain/` | Pure Kotlin: models, validation, repository interfaces, use cases. No Android or Firebase imports. |
 | `data/` | Room cache, Firestore mapping, repositories, the sync manager that copies Firestore into Room, and the WorkManager upload worker. |
 | `app/` | Compose screens, ViewModels, navigation, and the "aurora glass" design system. |
-| `functions/` | TypeScript Cloud Functions: `joinGroup`, `createInvite`, `deleteGroup`, `cleanUpChapter`, `cleanUpTask`, `syncMemberProfiles`. |
-| `firestore.rules`, `storage.rules` | Security rules: users only reach their own profile and the groups they belong to, with per-role limits (e.g. only leaders and advisers approve chapters; members move only tasks assigned to them). |
+| `functions/` | TypeScript Cloud Functions: callables (`joinGroup`, `createInvite`, `deleteGroup`), clean-up triggers (`cleanUpChapter`, `cleanUpTask`, `cleanUpFeedback`), `syncMemberProfiles`, and the triggers that write the activity feed. |
+| `firestore.rules`, `storage.rules` | Security rules: users only reach their own profile and the groups they belong to, with per-role limits (e.g. only leaders and advisers approve chapters; members move only tasks assigned to them; only advisers post feedback). The activity feed can't be written from the app at all. |
 
 ## Run it locally (no Firebase project needed)
 
@@ -60,6 +61,8 @@ Google sign-in needs a real project; email sign-up works against the emulators.
    ```bash
    npx firebase-tools deploy --only firestore,storage,functions,hosting
    ```
+
+   The Firestore deploy also turns on a TTL policy (in `firestore.indexes.json`) that deletes activity entries after 180 days.
 
 4. For invite links, set `thesisflow.inviteHost` in `gradle.properties` to your `<project-id>.web.app` domain, and put your signing certificate's SHA-256 in `hosting/public/.well-known/assetlinks.json`.
 

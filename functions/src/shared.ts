@@ -9,8 +9,11 @@ export const Collections = {
   invites: "invites",
   inviteCodes: "inviteCodes",
   chapters: "chapters",
+  versions: "versions",
+  feedback: "feedback",
   tasks: "tasks",
   files: "files",
+  activity: "activity",
 } as const;
 
 export type Role = "leader" | "member" | "adviser";

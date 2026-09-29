@@ -250,6 +250,61 @@ service cloud.firestore {
           // History is permanent; only the Admin SDK removes it, with its chapter.
           allow update, delete: if false;
         }
+
+        // Adviser feedback. Advisers post; anyone in the group marks it resolved;
+        // advisers, or whoever resolved it, can reopen it. Only the author can
+        // delete it. Same table as FeedbackRules.kt.
+        match /feedback/{feedbackId} {
+          allow read: if isMember(groupId);
+          allow create: if isMember(groupId) && roleIn(groupId) == 'adviser' && validNewFeedback();
+          allow update: if isMember(groupId) && validFeedbackUpdate(roleIn(groupId));
+          // Its files are removed by the cleanUpFeedback function.
+          allow delete: if isMember(groupId) && resource.data.authorId == request.auth.uid;
+
+          // The version it refers to must exist. In a batch that also moves the
+          // chapter to Revisions, get() still sees the chapter as it was.
+          function validNewFeedback() {
+            let data = request.resource.data;
+            let chapter = get(/databases/$(database)/documents/groups/$(groupId)/chapters/$(chapterId)).data;
+            return data.keys().hasOnly([
+                'groupId', 'chapterId', 'body', 'authorId', 'authorName', 'authorRole', 'versionNumber',
+                'resolved', 'resolvedBy', 'resolvedAt', 'createdAt', 'updatedAt', 'updatedBy'])
+              && data.groupId == groupId
+              && data.chapterId == chapterId
+              && isText(data.body, 1, 2000)
+              && isText(data.authorName, 0, 50)
+              && data.authorId == request.auth.uid
+              && data.authorRole == 'adviser'
+              && (data.versionNumber == null
+                || (data.versionNumber is int
+                  && data.versionNumber >= 1
+                  && data.versionNumber <= chapter.latestVersion))
+              && data.resolved == false
+              && data.resolvedBy == null
+              && data.resolvedAt == null
+              && data.createdAt == request.time
+              && data.updatedAt == request.time
+              && data.updatedBy == request.auth.uid;
+          }
+
+          // Only the resolved state changes, and it records who changed it.
+          function validFeedbackUpdate(role) {
+            let before = resource.data;
+            let after = request.resource.data;
+            let resolving = before.resolved == false && after.resolved == true
+              && after.resolvedBy == request.auth.uid
+              && after.resolvedAt == request.time;
+            let reopening = before.resolved == true && after.resolved == false
+              && after.resolvedBy == null
+              && after.resolvedAt == null
+              && (role == 'adviser' || before.resolvedBy == request.auth.uid);
+            return after.diff(before).affectedKeys()
+                .hasOnly(['resolved', 'resolvedBy', 'resolvedAt', 'updatedAt', 'updatedBy'])
+              && after.updatedAt == request.time
+              && after.updatedBy == request.auth.uid
+              && (resolving || reopening);
+          }
+        }
       }
 
       // ---------------------------------------------------------------- tasks
@@ -335,16 +390,17 @@ service cloud.firestore {
       // ---------------------------------------------------------------- files
 
       // One record per file in Storage. Students upload drafts and task
-      // attachments; advisers upload only files that go with their feedback.
+      // attachments; advisers upload only files that go with their own feedback.
       match /files/{fileId} {
         allow read: if isMember(groupId);
         allow create: if isMember(groupId) && validNewFile(roleIn(groupId));
         allow update: if false;
-        // Drafts are version history and stay; other files can be removed by
-        // whoever uploaded them, or by a leader.
+        // Drafts are version history and stay. Attachments can be removed by
+        // whoever uploaded them or by a leader; feedback files only by their adviser.
         allow delete: if isMember(groupId)
           && resource.data.kind != 'draft'
-          && (resource.data.uploadedBy == request.auth.uid || isLeader(groupId));
+          && (resource.data.uploadedBy == request.auth.uid
+            || (resource.data.kind == 'attachment' && isLeader(groupId)));
 
         function validNewFile(role) {
           let data = request.resource.data;
@@ -364,9 +420,20 @@ service cloud.firestore {
               || exists(/databases/$(database)/documents/groups/$(groupId)/chapters/$(data.chapterId)))
             && (data.kind != 'attachment'
               || exists(/databases/$(database)/documents/groups/$(groupId)/tasks/$(data.taskId)))
+            && (data.kind == 'feedback') == (data.feedbackId != null)
+            && (data.kind != 'feedback'
+              || get(/databases/$(database)/documents/groups/$(groupId)/chapters/$(data.chapterId)/feedback/$(data.feedbackId)).data.authorId
+                == request.auth.uid)
             && data.uploadedBy == request.auth.uid
             && data.uploadedAt == request.time;
         }
+      }
+
+      // What happened in the group. Only Cloud Functions write it (see
+      // functions/src/activity.ts), so no entry can be forged from the app.
+      match /activity/{activityId} {
+        allow read: if isMember(groupId);
+        allow write: if false;
       }
 
       // Current invite codes, shown on the leader's screen. Written by createInvite.
@@ -384,6 +451,11 @@ service cloud.firestore {
 
     // The collection-group query that syncs every task's comments at once.
     match /{path=**}/comments/{commentId} {
+      allow read: if isMember(resource.data.groupId);
+    }
+
+    // The collection-group query that syncs every chapter's feedback at once.
+    match /{path=**}/feedback/{feedbackId} {
       allow read: if isMember(resource.data.groupId);
     }
 

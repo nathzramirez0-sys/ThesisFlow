@@ -69,6 +69,7 @@ private fun requiredMessage(field: Field): Int = when (field) {
     Field.CHAPTER_TITLE -> R.string.validation_required_chapter_title
     Field.TASK_TITLE -> R.string.validation_required_task_title
     Field.COMMENT -> R.string.validation_required_comment
+    Field.FEEDBACK -> R.string.validation_required_feedback
     Field.THESIS_TITLE, Field.VERSION_NOTE, Field.TASK_DESCRIPTION -> R.string.validation_required
 }
 
@@ -89,5 +90,6 @@ private fun maxLength(field: Field): Int = when (field) {
     Field.TASK_TITLE -> Validators.TASK_TITLE_MAX
     Field.TASK_DESCRIPTION -> Validators.TASK_DESCRIPTION_MAX
     Field.COMMENT -> Validators.COMMENT_MAX
+    Field.FEEDBACK -> Validators.FEEDBACK_MAX
     else -> Int.MAX_VALUE
 }

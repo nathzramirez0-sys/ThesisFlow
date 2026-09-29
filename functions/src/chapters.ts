@@ -12,7 +12,7 @@ import { Collections } from "./shared";
  * The client only deletes one document, so deleting works offline; this
  * cleanup runs once the deletion reaches the server.
  */
-async function cleanUp(groupId: string, deleted: DocumentReference, fileField: "chapterId" | "taskId") {
+async function cleanUp(groupId: string, deleted: DocumentReference, fileField: "chapterId" | "taskId" | "feedbackId") {
   const db = getFirestore();
   await db.recursiveDelete(deleted);
 
@@ -29,7 +29,7 @@ async function cleanUp(groupId: string, deleted: DocumentReference, fileField: "
   return files.size;
 }
 
-/** A deleted chapter takes its version history and drafts with it. */
+/** A deleted chapter takes its version history, feedback and every file on either with it. */
 export const cleanUpChapter = onDocumentDeleted(
   `${Collections.groups}/{groupId}/${Collections.chapters}/{chapterId}`,
   async (event) => {
@@ -48,5 +48,18 @@ export const cleanUpTask = onDocumentDeleted(
     const ref = getFirestore().doc(`${Collections.groups}/${groupId}/${Collections.tasks}/${taskId}`);
     const files = await cleanUp(groupId, ref, "taskId");
     logger.info("Cleaned up deleted task", { groupId, taskId, files });
+  },
+);
+
+/** Deleted feedback takes the adviser's files with it. */
+export const cleanUpFeedback = onDocumentDeleted(
+  `${Collections.groups}/{groupId}/${Collections.chapters}/{chapterId}/${Collections.feedback}/{feedbackId}`,
+  async (event) => {
+    const { groupId, chapterId, feedbackId } = event.params;
+    const ref = getFirestore().doc(
+      `${Collections.groups}/${groupId}/${Collections.chapters}/${chapterId}/${Collections.feedback}/${feedbackId}`,
+    );
+    const files = await cleanUp(groupId, ref, "feedbackId");
+    logger.info("Cleaned up deleted feedback", { groupId, chapterId, feedbackId, files });
   },
 );

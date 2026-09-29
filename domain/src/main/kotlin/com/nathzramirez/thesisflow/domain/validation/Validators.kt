@@ -19,6 +19,7 @@ object Validators {
     const val TASK_TITLE_MAX = 100
     const val TASK_DESCRIPTION_MAX = 1000
     const val COMMENT_MAX = 1000
+    const val FEEDBACK_MAX = 2000
 
     private val emailRegex = Regex("""^[^\s@]+@[^\s@]+\.[^\s@]+$""")
 
@@ -71,6 +72,8 @@ object Validators {
         text(value, required = false, max = TASK_DESCRIPTION_MAX)
 
     fun comment(value: String): ValidationError? = text(value, required = true, max = COMMENT_MAX)
+
+    fun feedback(value: String): ValidationError? = text(value, required = true, max = FEEDBACK_MAX)
 
     fun inviteCode(normalized: String): ValidationError? = when {
         normalized.isEmpty() -> ValidationError.REQUIRED

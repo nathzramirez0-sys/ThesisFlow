@@ -96,8 +96,13 @@ internal class FileRepositoryImpl @Inject constructor(
             PendingUploadEntity(
                 fileId = fileId,
                 groupId = groupId,
-                chapterId = (target as? UploadTarget.ChapterDraft)?.chapterId,
+                chapterId = when (target) {
+                    is UploadTarget.ChapterDraft -> target.chapterId
+                    is UploadTarget.FeedbackFile -> target.chapterId
+                    is UploadTarget.TaskAttachment -> null
+                },
                 taskId = (target as? UploadTarget.TaskAttachment)?.taskId,
+                feedbackId = (target as? UploadTarget.FeedbackFile)?.feedbackId,
                 kind = target.kind,
                 cachedPath = copy.absolutePath,
                 fileName = file.name,
@@ -119,6 +124,9 @@ internal class FileRepositoryImpl @Inject constructor(
 
     override fun observePendingForTask(taskId: String): Flow<List<PendingUpload>> =
         pendingUploads.observeForTask(taskId).map { uploads -> uploads.map { it.toDomain() } }
+
+    override fun observePendingFeedbackFiles(chapterId: String): Flow<List<PendingUpload>> =
+        pendingUploads.observeFeedbackFilesForChapter(chapterId).map { uploads -> uploads.map { it.toDomain() } }
 
     override fun observeTaskAttachments(taskId: String): Flow<List<FileAttachment>> =
         fileDao.observeForTask(taskId).map { files -> files.map { it.toDomain() } }

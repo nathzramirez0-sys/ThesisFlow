@@ -7,6 +7,7 @@ import com.nathzramirez.thesisflow.domain.model.ChapterRules
 import com.nathzramirez.thesisflow.domain.model.Role
 import com.nathzramirez.thesisflow.domain.model.ThesisProgress
 import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
+import com.nathzramirez.thesisflow.domain.repository.FeedbackRepository
 import com.nathzramirez.thesisflow.domain.repository.GroupRepository
 import com.nathzramirez.thesisflow.domain.result.AppResult
 import com.nathzramirez.thesisflow.domain.result.DomainError
@@ -41,6 +42,8 @@ data class ChapterListUiState(
     val role: Role? = null,
     val chapters: List<Chapter> = emptyList(),
     val progress: ThesisProgress = ThesisProgress(0, 0, 0),
+    /** Open feedback per chapter id; chapters without any are missing. */
+    val openFeedback: Map<String, Int> = emptyMap(),
     val titleDialog: TitleDialogState? = null,
     val confirmDelete: Chapter? = null,
     val isBusy: Boolean = false,
@@ -66,6 +69,7 @@ class ChapterListViewModel @AssistedInject constructor(
     @Assisted private val route: ChapterListRoute,
     groupRepository: GroupRepository,
     private val chapterRepository: ChapterRepository,
+    feedbackRepository: FeedbackRepository,
     private val addChapter: AddChapterUseCase,
     private val renameChapter: RenameChapterUseCase,
 ) : ViewModel() {
@@ -81,14 +85,16 @@ class ChapterListViewModel @AssistedInject constructor(
     val uiState: StateFlow<ChapterListUiState> = combine(
         groupRepository.observeGroup(groupId),
         chapterRepository.observeChapters(groupId),
+        feedbackRepository.observeOpenCounts(groupId),
         local,
-    ) { group, chapters, local ->
+    ) { group, chapters, openFeedback, local ->
         ChapterListUiState(
             isLoading = group == null,
             groupName = group?.name.orEmpty(),
             role = group?.myRole,
             chapters = chapters,
             progress = ThesisProgress.of(chapters),
+            openFeedback = openFeedback,
             titleDialog = local.titleDialog,
             confirmDelete = local.confirmDelete,
             isBusy = local.isBusy,

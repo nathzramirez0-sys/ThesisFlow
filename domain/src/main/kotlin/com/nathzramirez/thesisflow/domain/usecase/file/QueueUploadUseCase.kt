@@ -1,6 +1,7 @@
 package com.nathzramirez.thesisflow.domain.usecase.file
 
 import com.nathzramirez.thesisflow.domain.model.ChapterRules
+import com.nathzramirez.thesisflow.domain.model.FeedbackRules
 import com.nathzramirez.thesisflow.domain.model.TaskRules
 import com.nathzramirez.thesisflow.domain.model.UploadTarget
 import com.nathzramirez.thesisflow.domain.repository.FileRepository
@@ -28,6 +29,8 @@ class QueueUploadUseCase @Inject constructor(
         val allowed = when (target) {
             is UploadTarget.ChapterDraft -> ChapterRules.canUploadDrafts(role)
             is UploadTarget.TaskAttachment -> TaskRules.canAttachFiles(role)
+            // Authorship of the feedback is checked by the files rule on the server.
+            is UploadTarget.FeedbackFile -> FeedbackRules.canGiveFeedback(role)
         }
         if (!allowed) return AppResult.Failure(DomainError.PermissionDenied)
 
@@ -38,7 +41,7 @@ class QueueUploadUseCase @Inject constructor(
                 }
                 target.copy(note = target.note.trim())
             }
-            is UploadTarget.TaskAttachment -> target
+            is UploadTarget.TaskAttachment, is UploadTarget.FeedbackFile -> target
         }
 
         val file = when (val inspected = fileRepository.inspect(sourceUri)) {
