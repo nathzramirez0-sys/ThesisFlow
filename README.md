@@ -2,8 +2,8 @@
 
 A thesis and group-project manager for college students in the Philippines. Groups track who is doing what, which chapters are done, what the adviser said, and what is due next.
 
-> **Status:** in development. Phases 1–2 of 7 are done: accounts and groups, plus the chapter tracker with
-> statuses, deadlines, and versioned draft uploads that work offline.
+> **Status:** in development. Phases 1–3 of 7 are done: accounts and groups, the chapter tracker with
+> versioned drafts, and tasks with a list and kanban board, attachments and comments. All of it works offline.
 
 ## Stack
 
@@ -16,8 +16,8 @@ Kotlin · Jetpack Compose (Material 3) · MVVM + Clean Architecture · Hilt · C
 | `domain/` | Pure Kotlin: models, validation, repository interfaces, use cases. No Android or Firebase imports. |
 | `data/` | Room cache, Firestore mapping, repositories, the sync manager that copies Firestore into Room, and the WorkManager upload worker. |
 | `app/` | Compose screens, ViewModels, navigation, and the "aurora glass" design system. |
-| `functions/` | TypeScript Cloud Functions: `joinGroup`, `createInvite`, `deleteGroup`, `cleanUpChapter`, `syncMemberProfiles`. |
-| `firestore.rules`, `storage.rules` | Security rules: users only reach their own profile and the groups they belong to, with per-role limits (e.g. only leaders and advisers approve chapters). |
+| `functions/` | TypeScript Cloud Functions: `joinGroup`, `createInvite`, `deleteGroup`, `cleanUpChapter`, `cleanUpTask`, `syncMemberProfiles`. |
+| `firestore.rules`, `storage.rules` | Security rules: users only reach their own profile and the groups they belong to, with per-role limits (e.g. only leaders and advisers approve chapters; members move only tasks assigned to them). |
 
 ## Run it locally (no Firebase project needed)
 

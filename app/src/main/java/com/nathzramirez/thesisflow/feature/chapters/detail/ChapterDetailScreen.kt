@@ -22,16 +22,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,7 +53,6 @@ import com.nathzramirez.thesisflow.designsystem.component.FullScreenLoading
 import com.nathzramirez.thesisflow.designsystem.component.GlassCard
 import com.nathzramirez.thesisflow.designsystem.component.GlowDot
 import com.nathzramirez.thesisflow.designsystem.component.GradientButton
-import com.nathzramirez.thesisflow.designsystem.component.GradientProgressBar
 import com.nathzramirez.thesisflow.designsystem.component.HudLabel
 import com.nathzramirez.thesisflow.designsystem.component.SectionHeader
 import com.nathzramirez.thesisflow.designsystem.component.StatusPill
@@ -67,20 +62,17 @@ import com.nathzramirez.thesisflow.designsystem.theme.SpaceGrotesk
 import com.nathzramirez.thesisflow.domain.model.Chapter
 import com.nathzramirez.thesisflow.domain.model.ChapterStatus
 import com.nathzramirez.thesisflow.domain.model.ChapterVersion
-import com.nathzramirez.thesisflow.domain.model.PendingUpload
-import com.nathzramirez.thesisflow.domain.model.UploadState
-import com.nathzramirez.thesisflow.domain.result.DomainError
 import com.nathzramirez.thesisflow.domain.validation.Field
 import com.nathzramirez.thesisflow.domain.validation.UploadRules
 import com.nathzramirez.thesisflow.feature.chapters.DeadlineText
 import com.nathzramirez.thesisflow.feature.chapters.PendingSyncLabel
+import com.nathzramirez.thesisflow.feature.files.PendingUploadRow
 import com.nathzramirez.thesisflow.navigation.ChapterDetailRoute
-import com.nathzramirez.thesisflow.ui.endOfDay
+import com.nathzramirez.thesisflow.ui.DueDatePickerDialog
 import com.nathzramirez.thesisflow.ui.messageRes
 import com.nathzramirez.thesisflow.ui.validationMessage
 import java.time.Instant
 import java.time.ZoneId
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -210,7 +202,7 @@ fun ChapterDetailScreen(
         )
     }
     if (state.isDeadlinePickerOpen && chapter != null) {
-        DeadlinePickerDialog(
+        DueDatePickerDialog(
             current = chapter.deadline,
             onPick = viewModel::setDeadline,
             onDismiss = viewModel::dismissDeadlinePicker,
@@ -284,42 +276,6 @@ private fun StatusAndDeadline(
                     style = MaterialTheme.typography.labelLarge,
                     color = AuroraTheme.colors.gradientEnd,
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PendingUploadRow(upload: PendingUpload, onRetry: () -> Unit, onDiscard: () -> Unit) {
-    val failed = upload.state == UploadState.FAILED
-    GlassCard(modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Icon(
-                ImageVector.vectorResource(R.drawable.ic_document),
-                contentDescription = null,
-                tint = if (failed) AuroraTheme.colors.statusRevisions else AuroraTheme.colors.gradientEnd,
-            )
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(upload.fileName, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    when (upload.state) {
-                        UploadState.QUEUED -> stringResource(R.string.upload_waiting)
-                        UploadState.UPLOADING -> stringResource(R.string.upload_uploading, upload.progressPercent)
-                        UploadState.FAILED -> stringResource(
-                            R.string.upload_failed,
-                            stringResource((upload.error ?: DomainError.Unknown(null)).messageRes()),
-                        )
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (failed) AuroraTheme.colors.statusRevisions else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (upload.state == UploadState.UPLOADING) GradientProgressBar(upload.progressPercent / 100f)
-            }
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            if (failed) TextButton(onClick = onRetry) { Text(stringResource(R.string.upload_retry)) }
-            if (upload.state != UploadState.UPLOADING) {
-                TextButton(onClick = onDiscard) { Text(stringResource(R.string.upload_discard)) }
             }
         }
     }
@@ -417,38 +373,6 @@ private fun StatusPickerDialog(options: List<ChapterStatus>, onPick: (ChapterSta
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
-}
-
-/**
- * The picker works in UTC midnights; the chosen calendar day is converted to
- * the end of that day in the phone's time zone, so "due on the 5th" lasts all day.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DeadlinePickerDialog(current: Instant?, onPick: (Instant?) -> Unit, onDismiss: () -> Unit) {
-    val zone = ZoneId.systemDefault()
-    val initialMillis = current?.atZone(zone)?.toLocalDate()?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli()
-    val pickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val millis = pickerState.selectedDateMillis ?: return@TextButton onDismiss()
-                    val day = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                    onPick(endOfDay(day, zone))
-                },
-            ) { Text(stringResource(R.string.action_save)) }
-        },
-        dismissButton = {
-            Row {
-                if (current != null) TextButton(onClick = { onPick(null) }) { Text(stringResource(R.string.action_clear)) }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-            }
-        },
-    ) {
-        DatePicker(state = pickerState)
-    }
 }
 
 @Composable

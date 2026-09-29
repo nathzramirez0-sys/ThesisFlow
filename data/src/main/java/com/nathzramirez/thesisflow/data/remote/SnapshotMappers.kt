@@ -6,12 +6,18 @@ import com.nathzramirez.thesisflow.data.local.entity.ChapterVersionEntity
 import com.nathzramirez.thesisflow.data.local.entity.FileEntity
 import com.nathzramirez.thesisflow.data.local.entity.GroupEntity
 import com.nathzramirez.thesisflow.data.local.entity.MemberEntity
+import com.nathzramirez.thesisflow.data.local.entity.TaskAssigneeEntity
+import com.nathzramirez.thesisflow.data.local.entity.TaskCommentEntity
+import com.nathzramirez.thesisflow.data.local.entity.TaskEntity
+import com.nathzramirez.thesisflow.data.local.entity.TaskRow
 import com.nathzramirez.thesisflow.data.local.entity.UserEntity
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Chapters
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Comments
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Files
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Groups
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Invites
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Members
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Tasks
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Users
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Versions
 import com.nathzramirez.thesisflow.domain.model.Invite
@@ -122,6 +128,44 @@ internal fun DocumentSnapshot.toFileEntity(groupId: String): FileEntity? {
         feedbackId = getString(Files.FEEDBACK_ID),
         uploadedBy = getString(Files.UPLOADED_BY).orEmpty(),
         uploadedAt = instant(Files.UPLOADED_AT),
+    )
+}
+
+internal fun DocumentSnapshot.toTaskRow(groupId: String): TaskRow? {
+    if (!exists()) return null
+    val task = TaskEntity(
+        id = id,
+        groupId = groupId,
+        title = getString(Tasks.TITLE) ?: return null,
+        description = getString(Tasks.DESCRIPTION).orEmpty(),
+        status = taskStatusFromWire(getString(Tasks.STATUS)) ?: return null,
+        priority = taskPriorityFromWire(getString(Tasks.PRIORITY)) ?: return null,
+        dueAt = instant(Tasks.DUE_AT),
+        chapterId = getString(Tasks.CHAPTER_ID),
+        createdBy = getString(Tasks.CREATED_BY).orEmpty(),
+        createdAt = instant(Tasks.CREATED_AT),
+        completedAt = instant(Tasks.COMPLETED_AT),
+        completedBy = getString(Tasks.COMPLETED_BY),
+        hasPendingWrites = metadata.hasPendingWrites(),
+    )
+    val assignees = (get(Tasks.ASSIGNEE_IDS) as? List<*>).orEmpty()
+        .filterIsInstance<String>()
+        .distinct()
+        .map { uid -> TaskAssigneeEntity(taskId = id, uid = uid, groupId = groupId) }
+    return TaskRow(task, assignees)
+}
+
+internal fun DocumentSnapshot.toCommentEntity(): TaskCommentEntity? {
+    if (!exists()) return null
+    return TaskCommentEntity(
+        id = id,
+        groupId = getString(Comments.GROUP_ID) ?: return null,
+        taskId = getString(Comments.TASK_ID) ?: return null,
+        body = getString(Comments.BODY).orEmpty(),
+        authorId = getString(Comments.AUTHOR_ID).orEmpty(),
+        authorName = getString(Comments.AUTHOR_NAME).orEmpty(),
+        createdAt = instant(Comments.CREATED_AT),
+        hasPendingWrites = metadata.hasPendingWrites(),
     )
 }
 

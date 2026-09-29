@@ -12,4 +12,7 @@ enum class Field {
     INVITE_CODE,
     CHAPTER_TITLE,
     VERSION_NOTE,
+    TASK_TITLE,
+    TASK_DESCRIPTION,
+    COMMENT,
 }

@@ -93,6 +93,39 @@ internal object FirestoreSchema {
         const val UPLOADED_AT = "uploadedAt"
     }
 
+    /** `groups/{groupId}/tasks/{taskId}` */
+    object Tasks {
+        const val COLLECTION = "tasks"
+        const val GROUP_ID = "groupId"
+        const val TITLE = "title"
+        const val DESCRIPTION = "description"
+        const val STATUS = "status"
+        const val PRIORITY = "priority"
+        const val DUE_AT = "dueAt"
+        const val CHAPTER_ID = "chapterId"
+        const val ASSIGNEE_IDS = "assigneeIds"
+        const val CREATED_BY = "createdBy"
+        const val CREATED_AT = "createdAt"
+        const val UPDATED_AT = "updatedAt"
+        const val UPDATED_BY = "updatedBy"
+        const val COMPLETED_AT = "completedAt"
+        const val COMPLETED_BY = "completedBy"
+    }
+
+    /**
+     * `groups/{groupId}/tasks/{taskId}/comments/{commentId}`. Like versions, the ids
+     * are repeated inside so one collection-group query syncs a group's comments.
+     */
+    object Comments {
+        const val COLLECTION = "comments"
+        const val GROUP_ID = "groupId"
+        const val TASK_ID = "taskId"
+        const val BODY = "body"
+        const val AUTHOR_ID = "authorId"
+        const val AUTHOR_NAME = "authorName"
+        const val CREATED_AT = "createdAt"
+    }
+
     /** Cloud Storage layout; storage.rules matches the same path. */
     object Storage {
         const val METADATA_UPLOADED_BY = "uploadedBy"

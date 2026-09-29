@@ -62,6 +62,9 @@ interface FileDao {
     @Query("SELECT * FROM files WHERE id = :fileId")
     suspend fun get(fileId: String): FileEntity?
 
+    @Query("SELECT * FROM files WHERE taskId = :taskId ORDER BY uploadedAt DESC")
+    fun observeForTask(taskId: String): Flow<List<FileEntity>>
+
     @Upsert
     suspend fun upsertAll(files: List<FileEntity>)
 

@@ -7,9 +7,11 @@ import com.nathzramirez.thesisflow.domain.model.Group
 import com.nathzramirez.thesisflow.domain.model.Invite
 import com.nathzramirez.thesisflow.domain.model.Member
 import com.nathzramirez.thesisflow.domain.model.Role
+import com.nathzramirez.thesisflow.domain.model.TaskStatus
 import com.nathzramirez.thesisflow.domain.model.ThesisProgress
 import com.nathzramirez.thesisflow.domain.repository.AuthRepository
 import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
+import com.nathzramirez.thesisflow.domain.repository.TaskRepository
 import com.nathzramirez.thesisflow.domain.repository.GroupRepository
 import com.nathzramirez.thesisflow.domain.result.AppResult
 import com.nathzramirez.thesisflow.domain.result.DomainError
@@ -32,6 +34,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 
 data class GroupOverviewUiState(
     val isLoading: Boolean = true,
@@ -39,6 +42,7 @@ data class GroupOverviewUiState(
     val members: List<Member> = emptyList(),
     val invites: Map<Role, Invite> = emptyMap(),
     val progress: ThesisProgress = ThesisProgress(0, 0, 0),
+    val tasks: TaskSummary = TaskSummary(),
     val myUid: String? = null,
     val isBusy: Boolean = false,
     /** The invite role whose code is being generated, to show a spinner on that row. */
@@ -47,6 +51,9 @@ data class GroupOverviewUiState(
     /** True once the user left, deleted the group, or was removed: the screen closes. */
     val isClosed: Boolean = false,
 )
+
+/** Counts for the Tasks card. */
+data class TaskSummary(val open: Int = 0, val overdue: Int = 0, val mine: Int = 0)
 
 /** Transient state from user actions, combined with the data flows below. */
 private data class ActionState(
@@ -66,6 +73,7 @@ class GroupOverviewViewModel @AssistedInject constructor(
     authRepository: AuthRepository,
     private val groupRepository: GroupRepository,
     chapterRepository: ChapterRepository,
+    taskRepository: TaskRepository,
     private val changeMemberRole: ChangeMemberRoleUseCase,
     private val leaveGroup: LeaveGroupUseCase,
 ) : ViewModel() {
@@ -94,6 +102,16 @@ class GroupOverviewViewModel @AssistedInject constructor(
 
     private val progress = chapterRepository.observeChapters(groupId).map(ThesisProgress::of)
 
+    private val taskSummary = combine(taskRepository.observeTasks(groupId), myUid) { tasks, uid ->
+        val now = Instant.now()
+        val open = tasks.filter { it.status != TaskStatus.DONE }
+        TaskSummary(
+            open = open.size,
+            overdue = open.count { it.isOverdue(now) },
+            mine = open.count { uid != null && uid in it.assigneeIds },
+        )
+    }
+
     val uiState: StateFlow<GroupOverviewUiState> = combine(
         group,
         groupRepository.observeMembers(groupId),
@@ -114,6 +132,7 @@ class GroupOverviewViewModel @AssistedInject constructor(
             isClosed = action.finished || (group == null && hasSeenGroup),
         )
     }.combine(progress) { state, progress -> state.copy(progress = progress) }
+        .combine(taskSummary) { state, tasks -> state.copy(tasks = tasks) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GroupOverviewUiState())
 
     fun createInvite(role: Role) = runAction(inviteRole = role) { groupRepository.createInvite(groupId, role) }

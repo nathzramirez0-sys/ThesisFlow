@@ -5,6 +5,8 @@ import com.nathzramirez.thesisflow.data.local.entity.FileEntity
 import com.nathzramirez.thesisflow.data.local.entity.GroupEntity
 import com.nathzramirez.thesisflow.data.local.entity.MemberEntity
 import com.nathzramirez.thesisflow.data.local.entity.PendingUploadEntity
+import com.nathzramirez.thesisflow.data.local.entity.TaskCommentEntity
+import com.nathzramirez.thesisflow.data.local.entity.TaskWithAssignees
 import com.nathzramirez.thesisflow.data.local.entity.UploadFailure
 import com.nathzramirez.thesisflow.data.local.entity.UserEntity
 import com.nathzramirez.thesisflow.data.local.entity.VersionWithDetails
@@ -14,6 +16,8 @@ import com.nathzramirez.thesisflow.domain.model.FileAttachment
 import com.nathzramirez.thesisflow.domain.model.Group
 import com.nathzramirez.thesisflow.domain.model.Member
 import com.nathzramirez.thesisflow.domain.model.PendingUpload
+import com.nathzramirez.thesisflow.domain.model.Task
+import com.nathzramirez.thesisflow.domain.model.TaskComment
 import com.nathzramirez.thesisflow.domain.model.User
 import com.nathzramirez.thesisflow.domain.result.DomainError
 
@@ -93,9 +97,35 @@ internal fun PendingUploadEntity.toDomain() = PendingUpload(
     error = failure?.let { name ->
         when (runCatching { UploadFailure.valueOf(name) }.getOrDefault(UploadFailure.UNKNOWN)) {
             UploadFailure.PERMISSION_DENIED -> DomainError.PermissionDenied
-            UploadFailure.CHAPTER_DELETED -> DomainError.NotFound
+            UploadFailure.TARGET_DELETED -> DomainError.NotFound
             UploadFailure.FILE_MISSING -> DomainError.FileUnreadable
             UploadFailure.UNKNOWN -> DomainError.Unknown(null)
         }
     },
+)
+
+internal fun TaskWithAssignees.toDomain() = Task(
+    id = task.id,
+    groupId = task.groupId,
+    title = task.title,
+    description = task.description,
+    status = task.status,
+    priority = task.priority,
+    dueAt = task.dueAt,
+    chapterId = task.chapterId,
+    assigneeIds = assignees.map { it.uid }.toSet(),
+    createdBy = task.createdBy,
+    createdAt = task.createdAt,
+    completedAt = task.completedAt,
+    hasPendingWrites = task.hasPendingWrites,
+)
+
+internal fun TaskCommentEntity.toDomain() = TaskComment(
+    id = id,
+    taskId = taskId,
+    body = body,
+    authorId = authorId,
+    authorName = authorName,
+    createdAt = createdAt,
+    hasPendingWrites = hasPendingWrites,
 )

@@ -15,11 +15,12 @@ import java.time.Instant
  * [fileId] is chosen before the upload starts, so a retry writes to the same
  * Storage path and Firestore document instead of creating a duplicate.
  */
-@Entity(tableName = "pending_uploads", indices = [Index("chapterId")])
+@Entity(tableName = "pending_uploads", indices = [Index("chapterId"), Index("taskId")])
 data class PendingUploadEntity(
     @PrimaryKey val fileId: String,
     val groupId: String,
     val chapterId: String?,
+    val taskId: String?,
     val kind: FileKind,
     /** Copy in app storage, so the upload doesn't depend on the picker's temporary permission. */
     val cachedPath: String,
@@ -36,4 +37,4 @@ data class PendingUploadEntity(
 )
 
 /** Reasons an upload stopped for good; stored by name in [PendingUploadEntity.failure]. */
-enum class UploadFailure { PERMISSION_DENIED, CHAPTER_DELETED, FILE_MISSING, UNKNOWN }
+enum class UploadFailure { PERMISSION_DENIED, TARGET_DELETED, FILE_MISSING, UNKNOWN }

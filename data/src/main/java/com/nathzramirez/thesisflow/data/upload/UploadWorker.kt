@@ -20,6 +20,7 @@ import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Chapters
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Files
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Groups
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Storage
+import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Tasks
 import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Versions
 import com.nathzramirez.thesisflow.data.remote.toWire
 import com.nathzramirez.thesisflow.domain.model.ChapterStatus
@@ -122,13 +123,18 @@ class UploadWorker @AssistedInject constructor(
             Files.STORAGE_PATH to storagePath(upload),
             Files.KIND to upload.kind.toWire(),
             Files.CHAPTER_ID to upload.chapterId,
-            Files.TASK_ID to null,
+            Files.TASK_ID to upload.taskId,
             Files.FEEDBACK_ID to null,
             Files.UPLOADED_BY to upload.uploadedBy,
             Files.UPLOADED_AT to FieldValue.serverTimestamp(),
         )
 
         if (upload.kind != FileKind.DRAFT) {
+            // The rules refuse an attachment whose task is gone; say so clearly instead.
+            val taskId = checkNotNull(upload.taskId)
+            if (!group.collection(Tasks.COLLECTION).document(taskId).get().await().exists()) {
+                throw TargetDeletedException()
+            }
             fileRef.set(fileFields).await()
             return
         }
@@ -137,7 +143,7 @@ class UploadWorker @AssistedInject constructor(
         firestore.runTransaction { transaction ->
             if (transaction.get(fileRef).exists()) return@runTransaction // An earlier attempt got this far.
             val chapter = transaction.get(chapterRef)
-            if (!chapter.exists()) throw ChapterDeletedException()
+            if (!chapter.exists()) throw TargetDeletedException()
 
             val next = (chapter.getLong(Chapters.LATEST_VERSION) ?: 0) + 1
             val chapterChanges = mutableMapOf<String, Any>(
@@ -183,7 +189,7 @@ class UploadWorker @AssistedInject constructor(
 
     /** Errors retrying can't fix. Anything else (mostly network) is retried with backoff. */
     private fun permanentFailure(e: Exception): UploadFailure? = when {
-        e is ChapterDeletedException -> UploadFailure.CHAPTER_DELETED
+        e is TargetDeletedException -> UploadFailure.TARGET_DELETED
         e is StorageException && e.errorCode == StorageException.ERROR_NOT_AUTHORIZED ->
             UploadFailure.PERMISSION_DENIED
         e is FirebaseFirestoreException && e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED ->
@@ -194,7 +200,7 @@ class UploadWorker @AssistedInject constructor(
     private fun storagePath(upload: PendingUploadEntity) =
         Storage.filePath(upload.groupId, upload.fileId, upload.fileName)
 
-    private class ChapterDeletedException : IllegalStateException("Chapter was deleted")
+    private class TargetDeletedException : IllegalStateException("The chapter or task was deleted")
 
     companion object {
         const val KEY_FILE_ID = "fileId"

@@ -3,6 +3,7 @@ package com.nathzramirez.thesisflow.domain.repository
 import com.nathzramirez.thesisflow.domain.model.FileAttachment
 import com.nathzramirez.thesisflow.domain.model.LocalFileInfo
 import com.nathzramirez.thesisflow.domain.model.PendingUpload
+import com.nathzramirez.thesisflow.domain.model.UploadTarget
 import com.nathzramirez.thesisflow.domain.result.AppResult
 import kotlinx.coroutines.flow.Flow
 
@@ -15,18 +16,22 @@ interface FileRepository {
     suspend fun inspect(sourceUri: String): AppResult<LocalFileInfo>
 
     /**
-     * Copies the file into app storage and queues it. The upload runs in the
-     * background, survives the app closing, and waits for a connection.
+     * Copies the file into app storage and queues it for [target]. The upload
+     * runs in the background, survives the app closing, and waits for a connection.
      */
-    suspend fun queueDraft(
+    suspend fun queueUpload(
         groupId: String,
-        chapterId: String,
+        target: UploadTarget,
         sourceUri: String,
         file: LocalFileInfo,
-        note: String,
     ): AppResult<Unit>
 
-    fun observePendingUploads(chapterId: String): Flow<List<PendingUpload>>
+    fun observePendingForChapter(chapterId: String): Flow<List<PendingUpload>>
+
+    fun observePendingForTask(taskId: String): Flow<List<PendingUpload>>
+
+    /** Newest first. */
+    fun observeTaskAttachments(taskId: String): Flow<List<FileAttachment>>
 
     suspend fun retryUpload(fileId: String): AppResult<Unit>
 

@@ -3,6 +3,8 @@ package com.nathzramirez.thesisflow.data.remote
 import com.nathzramirez.thesisflow.domain.model.ChapterStatus
 import com.nathzramirez.thesisflow.domain.model.FileKind
 import com.nathzramirez.thesisflow.domain.model.Role
+import com.nathzramirez.thesisflow.domain.model.TaskPriority
+import com.nathzramirez.thesisflow.domain.model.TaskStatus
 
 /*
  * Enums are stored in Firestore as fixed lowercase strings, never as Kotlin's
@@ -50,5 +52,31 @@ internal fun fileKindFromWire(value: String?): FileKind? = when (value) {
     "draft" -> FileKind.DRAFT
     "attachment" -> FileKind.ATTACHMENT
     "feedback" -> FileKind.FEEDBACK
+    else -> null
+}
+
+internal fun TaskStatus.toWire(): String = when (this) {
+    TaskStatus.TODO -> "todo"
+    TaskStatus.IN_PROGRESS -> "in_progress"
+    TaskStatus.DONE -> "done"
+}
+
+internal fun taskStatusFromWire(value: String?): TaskStatus? = when (value) {
+    "todo" -> TaskStatus.TODO
+    "in_progress" -> TaskStatus.IN_PROGRESS
+    "done" -> TaskStatus.DONE
+    else -> null
+}
+
+internal fun TaskPriority.toWire(): String = when (this) {
+    TaskPriority.LOW -> "low"
+    TaskPriority.MEDIUM -> "medium"
+    TaskPriority.HIGH -> "high"
+}
+
+internal fun taskPriorityFromWire(value: String?): TaskPriority? = when (value) {
+    "low" -> TaskPriority.LOW
+    "medium" -> TaskPriority.MEDIUM
+    "high" -> TaskPriority.HIGH
     else -> null
 }

@@ -9,6 +9,8 @@ import com.nathzramirez.thesisflow.data.local.dao.FileDao
 import com.nathzramirez.thesisflow.data.local.dao.GroupDao
 import com.nathzramirez.thesisflow.data.local.dao.MemberDao
 import com.nathzramirez.thesisflow.data.local.dao.PendingUploadDao
+import com.nathzramirez.thesisflow.data.local.dao.TaskCommentDao
+import com.nathzramirez.thesisflow.data.local.dao.TaskDao
 import com.nathzramirez.thesisflow.data.local.dao.UserDao
 import dagger.Module
 import dagger.Provides
@@ -52,4 +54,10 @@ object DatabaseModule {
 
     @Provides
     fun providePendingUploadDao(database: ThesisFlowDatabase): PendingUploadDao = database.pendingUploadDao()
+
+    @Provides
+    fun provideTaskDao(database: ThesisFlowDatabase): TaskDao = database.taskDao()
+
+    @Provides
+    fun provideTaskCommentDao(database: ThesisFlowDatabase): TaskCommentDao = database.taskCommentDao()
 }

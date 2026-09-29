@@ -252,6 +252,86 @@ service cloud.firestore {
         }
       }
 
+      // ---------------------------------------------------------------- tasks
+
+      // Leaders create, edit, assign and delete tasks. Members may only move a
+      // task they're assigned to (status and completion). Same table as TaskRules.kt.
+      match /tasks/{taskId} {
+        allow read: if isMember(groupId);
+        allow create: if isLeader(groupId) && validNewTask();
+        allow update: if isMember(groupId) && validTaskUpdate(roleIn(groupId));
+        // Comments and attachments of a deleted task are removed by cleanUpTask.
+        allow delete: if isLeader(groupId);
+
+        function validTaskFields(data) {
+          return isText(data.title, 1, 100)
+            && isText(data.description, 0, 1000)
+            && data.priority in ['low', 'medium', 'high']
+            && data.status in ['todo', 'in_progress', 'done']
+            && isOptionalTimestamp(data.dueAt)
+            && isOptionalText(data.chapterId, 128)
+            && data.assigneeIds is list
+            && data.assigneeIds.size() <= 10
+            && get(groupPath(groupId)).data.memberIds.hasAll(data.assigneeIds)
+            // A task counts as completed exactly when it's in the Done column.
+            && (data.status == 'done') == (data.completedAt != null)
+            && (data.status == 'done') == (data.completedBy != null);
+        }
+
+        function validNewTask() {
+          let data = request.resource.data;
+          return data.keys().hasOnly([
+              'groupId', 'title', 'description', 'priority', 'status', 'dueAt', 'chapterId',
+              'assigneeIds', 'createdBy', 'createdAt', 'updatedAt', 'updatedBy', 'completedAt', 'completedBy'])
+            && validTaskFields(data)
+            && data.groupId == groupId
+            && data.status == 'todo'
+            && data.createdBy == request.auth.uid
+            && data.createdAt == request.time
+            && data.updatedAt == request.time
+            && data.updatedBy == request.auth.uid;
+        }
+
+        function validTaskUpdate(role) {
+          let before = resource.data;
+          let after = request.resource.data;
+          let changed = after.diff(before).affectedKeys();
+          let completing = changed.hasAny(['completedAt'])
+            ? (after.completedAt == null || (after.completedAt == request.time && after.completedBy == request.auth.uid))
+            : true;
+          let leaderEdit = role == 'leader'
+            && changed.hasOnly([
+                'title', 'description', 'priority', 'status', 'dueAt', 'chapterId', 'assigneeIds',
+                'updatedAt', 'updatedBy', 'completedAt', 'completedBy']);
+          let assigneeMove = role == 'member'
+            && request.auth.uid in before.assigneeIds
+            && changed.hasOnly(['status', 'updatedAt', 'updatedBy', 'completedAt', 'completedBy']);
+          return validTaskFields(after)
+            && after.updatedAt == request.time
+            && after.updatedBy == request.auth.uid
+            && completing
+            && (leaderEdit || assigneeMove);
+        }
+
+        // Discussion on a task: anyone in the group, the adviser included.
+        match /comments/{commentId} {
+          allow read: if isMember(groupId);
+          allow create: if isMember(groupId)
+            && request.resource.data.keys().hasOnly([
+                'groupId', 'taskId', 'body', 'authorId', 'authorName', 'createdAt'])
+            && request.resource.data.groupId == groupId
+            && request.resource.data.taskId == taskId
+            && isText(request.resource.data.body, 1, 1000)
+            && isText(request.resource.data.authorName, 0, 50)
+            && request.resource.data.authorId == request.auth.uid
+            && request.resource.data.createdAt == request.time;
+          allow update: if false;
+          // Authors can take back what they wrote; leaders can moderate.
+          allow delete: if isMember(groupId)
+            && (resource.data.authorId == request.auth.uid || isLeader(groupId));
+        }
+      }
+
       // ---------------------------------------------------------------- files
 
       // One record per file in Storage. Students upload drafts and task
@@ -282,6 +362,8 @@ service cloud.firestore {
             && (role == 'adviser') == (data.kind == 'feedback')
             && (data.kind != 'draft'
               || exists(/databases/$(database)/documents/groups/$(groupId)/chapters/$(data.chapterId)))
+            && (data.kind != 'attachment'
+              || exists(/databases/$(database)/documents/groups/$(groupId)/tasks/$(data.taskId)))
             && data.uploadedBy == request.auth.uid
             && data.uploadedAt == request.time;
         }
@@ -297,6 +379,11 @@ service cloud.firestore {
     // The collection-group query that syncs every chapter's versions at once.
     // It must filter on groupId, which lets this rule check membership.
     match /{path=**}/versions/{versionId} {
+      allow read: if isMember(resource.data.groupId);
+    }
+
+    // The collection-group query that syncs every task's comments at once.
+    match /{path=**}/comments/{commentId} {
       allow read: if isMember(resource.data.groupId);
     }
 

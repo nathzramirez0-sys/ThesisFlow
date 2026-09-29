@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
 
@@ -29,6 +30,7 @@ fun SegmentedControl(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     val aurora = AuroraTheme.colors
     Row(
@@ -51,11 +53,17 @@ fun SegmentedControl(
                     .weight(1f)
                     .clip(CircleShape)
                     .then(if (selected) Modifier.background(aurora.buttonGradient) else Modifier)
-                    .selectable(selected = selected, role = Role.Tab, onClick = { onSelect(index) })
-                    .padding(vertical = 12.dp),
+                    .selectable(selected = selected, enabled = enabled, role = Role.Tab, onClick = { onSelect(index) })
+                    .padding(horizontal = 6.dp, vertical = 12.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(label, color = textColor, style = MaterialTheme.typography.labelLarge)
+                Text(
+                    label,
+                    color = textColor,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }

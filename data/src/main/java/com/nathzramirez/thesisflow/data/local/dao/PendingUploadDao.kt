@@ -12,6 +12,9 @@ interface PendingUploadDao {
     @Query("SELECT * FROM pending_uploads WHERE chapterId = :chapterId ORDER BY createdAt")
     fun observeForChapter(chapterId: String): Flow<List<PendingUploadEntity>>
 
+    @Query("SELECT * FROM pending_uploads WHERE taskId = :taskId ORDER BY createdAt")
+    fun observeForTask(taskId: String): Flow<List<PendingUploadEntity>>
+
     @Query("SELECT * FROM pending_uploads WHERE fileId = :fileId")
     suspend fun get(fileId: String): PendingUploadEntity?
 

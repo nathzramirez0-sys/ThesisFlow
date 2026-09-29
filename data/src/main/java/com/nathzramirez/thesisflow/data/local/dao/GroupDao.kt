@@ -50,6 +50,9 @@ interface GroupDao {
         deleteOrphanVersions()
         deleteOrphanFiles()
         deleteOrphanPendingUploads()
+        deleteOrphanTasks()
+        deleteOrphanTaskAssignees()
+        deleteOrphanTaskComments()
     }
 
     @Query("DELETE FROM groups WHERE id = :groupId")
@@ -76,4 +79,13 @@ interface GroupDao {
     /** The upload worker notices its row is gone and deletes the local copy. */
     @Query("DELETE FROM pending_uploads WHERE groupId NOT IN (SELECT id FROM groups)")
     suspend fun deleteOrphanPendingUploads()
+
+    @Query("DELETE FROM tasks WHERE groupId NOT IN (SELECT id FROM groups)")
+    suspend fun deleteOrphanTasks()
+
+    @Query("DELETE FROM task_assignees WHERE groupId NOT IN (SELECT id FROM groups)")
+    suspend fun deleteOrphanTaskAssignees()
+
+    @Query("DELETE FROM task_comments WHERE groupId NOT IN (SELECT id FROM groups)")
+    suspend fun deleteOrphanTaskComments()
 }

@@ -26,7 +26,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -34,6 +37,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -117,17 +121,26 @@ fun GlassCard(
 }
 
 /** A Scaffold that lets the aurora background show through. */
+/**
+ * Wires a pinned scroll behaviour to [AuroraTopBar] through a composition local:
+ * the bar stays see-through over the aurora at rest and turns solid once content
+ * scrolls under it, on every screen, without each one passing the behaviour along.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuroraScaffold(
     modifier: Modifier = Modifier,
     topBar: @Composable () -> Unit = {},
+    bottomBar: @Composable () -> Unit = {},
     snackbarHost: @Composable () -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
-        modifier = modifier,
-        topBar = topBar,
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = { CompositionLocalProvider(LocalTopBarScrollBehavior provides scrollBehavior, content = topBar) },
+        bottomBar = bottomBar,
         snackbarHost = snackbarHost,
         floatingActionButton = floatingActionButton,
         containerColor = Color.Transparent,
@@ -136,7 +149,10 @@ fun AuroraScaffold(
     )
 }
 
-/** A transparent top bar with an optional back arrow. */
+@OptIn(ExperimentalMaterial3Api::class)
+private val LocalTopBarScrollBehavior = staticCompositionLocalOf<TopAppBarScrollBehavior?> { null }
+
+/** A top bar with an optional back arrow; transparent until content scrolls beneath it. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuroraTopBar(
@@ -154,9 +170,10 @@ fun AuroraTopBar(
             }
         },
         actions = { actions() },
+        scrollBehavior = LocalTopBarScrollBehavior.current,
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
-            scrolledContainerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.9f),
+            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
         ),
     )
 }

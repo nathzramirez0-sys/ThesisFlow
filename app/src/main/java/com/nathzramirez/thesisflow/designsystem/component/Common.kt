@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
 
@@ -118,10 +119,12 @@ fun Avatar(name: String, photoUrl: String?, modifier: Modifier = Modifier, size:
                 modifier = Modifier.matchParentSize(),
             )
         } else {
+            // Scaled with the avatar, so wide pairs like "CM" fit even at 28 dp.
             Text(
                 text = initialsOf(name),
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleSmall.copy(fontSize = (size.value * 0.34f).sp, lineHeight = (size.value * 0.4f).sp),
                 color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
             )
         }
     }

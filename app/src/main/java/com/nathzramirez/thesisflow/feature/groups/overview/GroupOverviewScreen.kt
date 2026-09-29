@@ -57,6 +57,7 @@ import com.nathzramirez.thesisflow.designsystem.component.CodeTiles
 import com.nathzramirez.thesisflow.designsystem.component.FullScreenLoading
 import com.nathzramirez.thesisflow.designsystem.component.GhostButton
 import com.nathzramirez.thesisflow.designsystem.component.GlassCard
+import com.nathzramirez.thesisflow.designsystem.component.GlowPill
 import com.nathzramirez.thesisflow.designsystem.component.HudLabel
 import com.nathzramirez.thesisflow.designsystem.component.ProgressRing
 import com.nathzramirez.thesisflow.designsystem.component.RoleBadge
@@ -88,6 +89,7 @@ fun GroupOverviewScreen(
     route: GroupOverviewRoute,
     onBack: () -> Unit,
     onOpenChapters: () -> Unit,
+    onOpenTasks: () -> Unit,
     viewModel: GroupOverviewViewModel = hiltViewModel<GroupOverviewViewModel, GroupOverviewViewModel.Factory> {
         it.create(route)
     },
@@ -155,6 +157,7 @@ fun GroupOverviewScreen(
         ) {
             item { Hero(group) }
             item { ChaptersCard(progress = state.progress, onClick = onOpenChapters) }
+            item { TasksCard(summary = state.tasks, onClick = onOpenTasks) }
 
             if (group.myRole.canInvite) {
                 item {
@@ -264,6 +267,38 @@ private fun ChaptersCard(progress: ThesisProgress, onClick: () -> Unit) {
                     )
                 }
             }
+        }
+    }
+}
+
+/** Open work at a glance: how much is left, what's late, and what's yours. */
+@Composable
+private fun TasksCard(summary: TaskSummary, onClick: () -> Unit) {
+    val aurora = AuroraTheme.colors
+    GlassCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                HudLabel(stringResource(R.string.tasks_title))
+                Text(
+                    pluralStringResource(R.plurals.tasks_open_count, summary.open, summary.open),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (summary.overdue > 0) {
+                        GlowPill(
+                            pluralStringResource(R.plurals.tasks_overdue_count, summary.overdue, summary.overdue),
+                            aurora.statusRevisions,
+                        )
+                    }
+                    if (summary.mine > 0) {
+                        GlowPill(
+                            pluralStringResource(R.plurals.tasks_mine_count, summary.mine, summary.mine),
+                            aurora.gradientEnd,
+                        )
+                    }
+                }
+            }
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.tasks_open_board), tint = aurora.gradientEnd)
         }
     }
 }

@@ -7,6 +7,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.nathzramirez.thesisflow.domain.model.ChapterStatus
+import com.nathzramirez.thesisflow.domain.model.TaskPriority
+import com.nathzramirez.thesisflow.domain.model.TaskStatus
 
 /**
  * Brand tokens Material 3 has no slot for: the violet-to-cyan gradient, the
@@ -46,6 +48,19 @@ data class AuroraColors(
         ChapterStatus.FOR_REVIEW -> statusReview
         ChapterStatus.REVISIONS -> statusRevisions
         ChapterStatus.APPROVED -> statusApproved
+    }
+
+    /** Task columns reuse the chapter palette: grey waiting, cyan active, green done. */
+    fun taskStatusColor(status: TaskStatus): Color = when (status) {
+        TaskStatus.TODO -> statusNotStarted
+        TaskStatus.IN_PROGRESS -> statusDrafting
+        TaskStatus.DONE -> statusApproved
+    }
+
+    fun priorityColor(priority: TaskPriority): Color = when (priority) {
+        TaskPriority.LOW -> statusNotStarted
+        TaskPriority.MEDIUM -> statusReview
+        TaskPriority.HIGH -> statusRevisions
     }
 }
 

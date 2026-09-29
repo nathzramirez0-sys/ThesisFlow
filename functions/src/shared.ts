@@ -9,6 +9,7 @@ export const Collections = {
   invites: "invites",
   inviteCodes: "inviteCodes",
   chapters: "chapters",
+  tasks: "tasks",
   files: "files",
 } as const;
 

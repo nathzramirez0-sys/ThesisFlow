@@ -10,13 +10,14 @@ import com.nathzramirez.thesisflow.domain.model.FileAttachment
 import com.nathzramirez.thesisflow.domain.model.LocalFileInfo
 import com.nathzramirez.thesisflow.domain.model.PendingUpload
 import com.nathzramirez.thesisflow.domain.model.Role
+import com.nathzramirez.thesisflow.domain.model.UploadTarget
 import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
 import com.nathzramirez.thesisflow.domain.repository.FileRepository
 import com.nathzramirez.thesisflow.domain.repository.GroupRepository
 import com.nathzramirez.thesisflow.domain.result.AppResult
 import com.nathzramirez.thesisflow.domain.result.DomainError
 import com.nathzramirez.thesisflow.domain.usecase.chapter.ChangeChapterStatusUseCase
-import com.nathzramirez.thesisflow.domain.usecase.chapter.QueueDraftUploadUseCase
+import com.nathzramirez.thesisflow.domain.usecase.file.QueueUploadUseCase
 import com.nathzramirez.thesisflow.domain.validation.Field
 import com.nathzramirez.thesisflow.domain.validation.UploadRules
 import com.nathzramirez.thesisflow.domain.validation.ValidationError
@@ -86,7 +87,7 @@ class ChapterDetailViewModel @AssistedInject constructor(
     private val chapterRepository: ChapterRepository,
     private val fileRepository: FileRepository,
     private val changeStatus: ChangeChapterStatusUseCase,
-    private val queueDraftUpload: QueueDraftUploadUseCase,
+    private val queueUpload: QueueUploadUseCase,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -103,7 +104,7 @@ class ChapterDetailViewModel @AssistedInject constructor(
         groupRepository.observeGroup(route.groupId),
         chapterRepository.observeChapter(route.chapterId),
         chapterRepository.observeVersions(route.chapterId),
-        fileRepository.observePendingUploads(route.chapterId),
+        fileRepository.observePendingForChapter(route.chapterId),
         local,
     ) { group, chapter, versions, uploads, local ->
         if (chapter != null) hasSeenChapter = true
@@ -174,7 +175,8 @@ class ChapterDetailViewModel @AssistedInject constructor(
         if (draft.isQueuing) return
         local.update { it.copy(draft = draft.copy(isQueuing = true)) }
         viewModelScope.launch {
-            val result = queueDraftUpload(route.groupId, route.chapterId, draft.sourceUri, draft.note)
+            val target = UploadTarget.ChapterDraft(route.chapterId, draft.note)
+            val result = queueUpload(route.groupId, target, draft.sourceUri)
             local.update {
                 when (result) {
                     is AppResult.Success -> it.copy(draft = null)

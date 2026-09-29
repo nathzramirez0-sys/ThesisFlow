@@ -21,9 +21,9 @@ import com.nathzramirez.thesisflow.data.remote.safeCall
 import com.nathzramirez.thesisflow.data.upload.LocalFiles
 import com.nathzramirez.thesisflow.data.upload.UploadScheduler
 import com.nathzramirez.thesisflow.domain.model.FileAttachment
-import com.nathzramirez.thesisflow.domain.model.FileKind
 import com.nathzramirez.thesisflow.domain.model.LocalFileInfo
 import com.nathzramirez.thesisflow.domain.model.PendingUpload
+import com.nathzramirez.thesisflow.domain.model.UploadTarget
 import com.nathzramirez.thesisflow.domain.model.UploadState
 import com.nathzramirez.thesisflow.domain.repository.FileRepository
 import com.nathzramirez.thesisflow.domain.result.AppResult
@@ -81,12 +81,11 @@ internal class FileRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun queueDraft(
+    override suspend fun queueUpload(
         groupId: String,
-        chapterId: String,
+        target: UploadTarget,
         sourceUri: String,
         file: LocalFileInfo,
-        note: String,
     ): AppResult<Unit> = safeCall {
         val uid = auth.requireUid()
         // An id from Firestore's generator, chosen now so every retry targets the same records.
@@ -97,13 +96,14 @@ internal class FileRepositoryImpl @Inject constructor(
             PendingUploadEntity(
                 fileId = fileId,
                 groupId = groupId,
-                chapterId = chapterId,
-                kind = FileKind.DRAFT,
+                chapterId = (target as? UploadTarget.ChapterDraft)?.chapterId,
+                taskId = (target as? UploadTarget.TaskAttachment)?.taskId,
+                kind = target.kind,
                 cachedPath = copy.absolutePath,
                 fileName = file.name,
                 mimeType = file.mimeType,
                 sizeBytes = copy.length(),
-                note = note,
+                note = (target as? UploadTarget.ChapterDraft)?.note.orEmpty(),
                 uploadedBy = uid,
                 state = UploadState.QUEUED,
                 progressPercent = 0,
@@ -114,8 +114,14 @@ internal class FileRepositoryImpl @Inject constructor(
         scheduler.enqueue(fileId)
     }
 
-    override fun observePendingUploads(chapterId: String): Flow<List<PendingUpload>> =
+    override fun observePendingForChapter(chapterId: String): Flow<List<PendingUpload>> =
         pendingUploads.observeForChapter(chapterId).map { uploads -> uploads.map { it.toDomain() } }
+
+    override fun observePendingForTask(taskId: String): Flow<List<PendingUpload>> =
+        pendingUploads.observeForTask(taskId).map { uploads -> uploads.map { it.toDomain() } }
+
+    override fun observeTaskAttachments(taskId: String): Flow<List<FileAttachment>> =
+        fileDao.observeForTask(taskId).map { files -> files.map { it.toDomain() } }
 
     override suspend fun retryUpload(fileId: String): AppResult<Unit> = safeCall {
         pendingUploads.resetForRetry(fileId)

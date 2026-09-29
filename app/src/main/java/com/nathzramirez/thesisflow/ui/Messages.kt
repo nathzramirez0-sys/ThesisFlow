@@ -67,7 +67,9 @@ private fun requiredMessage(field: Field): Int = when (field) {
     Field.GROUP_NAME -> R.string.validation_required_group_name
     Field.INVITE_CODE -> R.string.validation_required_invite_code
     Field.CHAPTER_TITLE -> R.string.validation_required_chapter_title
-    Field.THESIS_TITLE, Field.VERSION_NOTE -> R.string.validation_required
+    Field.TASK_TITLE -> R.string.validation_required_task_title
+    Field.COMMENT -> R.string.validation_required_comment
+    Field.THESIS_TITLE, Field.VERSION_NOTE, Field.TASK_DESCRIPTION -> R.string.validation_required
 }
 
 private fun minLength(field: Field): Int = when (field) {
@@ -84,5 +86,8 @@ private fun maxLength(field: Field): Int = when (field) {
     Field.THESIS_TITLE -> Validators.THESIS_TITLE_MAX
     Field.CHAPTER_TITLE -> Validators.CHAPTER_TITLE_MAX
     Field.VERSION_NOTE -> Validators.VERSION_NOTE_MAX
+    Field.TASK_TITLE -> Validators.TASK_TITLE_MAX
+    Field.TASK_DESCRIPTION -> Validators.TASK_DESCRIPTION_MAX
+    Field.COMMENT -> Validators.COMMENT_MAX
     else -> Int.MAX_VALUE
 }

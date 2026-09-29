@@ -7,13 +7,14 @@ import com.nathzramirez.thesisflow.domain.model.ChapterStatus
 import com.nathzramirez.thesisflow.domain.model.Group
 import com.nathzramirez.thesisflow.domain.model.LocalFileInfo
 import com.nathzramirez.thesisflow.domain.model.Role
+import com.nathzramirez.thesisflow.domain.model.UploadTarget
 import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
 import com.nathzramirez.thesisflow.domain.repository.FileRepository
 import com.nathzramirez.thesisflow.domain.repository.GroupRepository
 import com.nathzramirez.thesisflow.domain.result.AppResult
 import com.nathzramirez.thesisflow.domain.result.DomainError
 import com.nathzramirez.thesisflow.domain.usecase.chapter.ChangeChapterStatusUseCase
-import com.nathzramirez.thesisflow.domain.usecase.chapter.QueueDraftUploadUseCase
+import com.nathzramirez.thesisflow.domain.usecase.file.QueueUploadUseCase
 import com.nathzramirez.thesisflow.domain.validation.UploadRules
 import com.nathzramirez.thesisflow.feature.chapters.detail.ChapterDetailViewModel
 import com.nathzramirez.thesisflow.navigation.ChapterDetailRoute
@@ -52,8 +53,8 @@ class ChapterDetailViewModelTest {
         every { observeVersions("ch-1") } returns flowOf(emptyList())
     }
     private val files = mockk<FileRepository> {
-        every { observePendingUploads("ch-1") } returns flowOf(emptyList())
-        coEvery { queueDraft(any(), any(), any(), any(), any()) } returns AppResult.Success(Unit)
+        every { observePendingForChapter("ch-1") } returns flowOf(emptyList())
+        coEvery { queueUpload(any(), any(), any(), any()) } returns AppResult.Success(Unit)
     }
 
     private fun viewModel() = ChapterDetailViewModel(
@@ -62,7 +63,7 @@ class ChapterDetailViewModelTest {
         chapterRepository = chapters,
         fileRepository = files,
         changeStatus = ChangeChapterStatusUseCase(groups, chapters),
-        queueDraftUpload = QueueDraftUploadUseCase(groups, files),
+        queueUpload = QueueUploadUseCase(groups, files),
     )
 
     @Test
@@ -103,7 +104,9 @@ class ChapterDetailViewModelTest {
             viewModel.queueDraft()
             assertNull(expectMostRecentItem().draft)
         }
-        coVerify { files.queueDraft("g-1", "ch-1", "content://draft", pdf, "Fixed citations") }
+        coVerify {
+            files.queueUpload("g-1", UploadTarget.ChapterDraft("ch-1", "Fixed citations"), "content://draft", pdf)
+        }
     }
 
     @Test

@@ -26,10 +26,17 @@ import com.nathzramirez.thesisflow.feature.groups.list.GroupListScreen
 import com.nathzramirez.thesisflow.feature.groups.overview.GroupOverviewScreen
 import com.nathzramirez.thesisflow.feature.profile.OnboardingScreen
 import com.nathzramirez.thesisflow.feature.profile.ProfileScreen
+import com.nathzramirez.thesisflow.feature.tasks.board.TaskBoardScreen
+import com.nathzramirez.thesisflow.feature.tasks.detail.TaskDetailScreen
+import com.nathzramirez.thesisflow.feature.tasks.editor.TaskEditorScreen
 
 /**
  * Picks a whole navigation graph from the session state. Each graph has its own
  * back stack, so after signing out, Back can't return to a signed-in screen.
+ *
+ * Every screen lives inside a graph, onboarding included. A screen outside one
+ * would get its ViewModel from the Activity, which outlives sign-out: the next
+ * account to onboard on the same phone would see the previous person's form.
  */
 @Composable
 fun ThesisFlowRoot(viewModel: MainViewModel) {
@@ -40,7 +47,7 @@ fun ThesisFlowRoot(viewModel: MainViewModel) {
         when (session) {
             SessionState.Loading -> FullScreenLoading()
             SessionState.SignedOut -> AuthNavHost(hasPendingInvite = pendingInvite != null)
-            SessionState.NeedsOnboarding -> OnboardingScreen()
+            SessionState.NeedsOnboarding -> OnboardingNavHost()
             SessionState.ProfileUnavailable -> MessageScreen(
                 title = stringResource(R.string.profile_unavailable_title),
                 body = stringResource(R.string.profile_unavailable_body),
@@ -69,6 +76,15 @@ private fun AuthNavHost(hasPendingInvite: Boolean) {
         composable<SignUpRoute> {
             SignUpScreen(onBack = { navController.popBackStack() })
         }
+    }
+}
+
+/** A one-screen graph, so onboarding's ViewModel is new for every account. */
+@Composable
+private fun OnboardingNavHost() {
+    val navController = rememberNavController()
+    NavHost(navController = navController, startDestination = OnboardingRoute) {
+        composable<OnboardingRoute> { OnboardingScreen() }
     }
 }
 
@@ -112,6 +128,7 @@ private fun MainNavHost(pendingInviteCode: String?, onInviteHandled: () -> Unit)
                 route = route,
                 onBack = { navController.popBackStack() },
                 onOpenChapters = { navController.navigate(ChapterListRoute(route.groupId)) },
+                onOpenTasks = { navController.navigate(TaskBoardRoute(route.groupId)) },
             )
         }
         composable<ChapterListRoute> { entry ->
@@ -128,6 +145,43 @@ private fun MainNavHost(pendingInviteCode: String?, onInviteHandled: () -> Unit)
             ChapterDetailScreen(
                 route = entry.toRoute<ChapterDetailRoute>(),
                 onBack = { navController.popBackStack() },
+            )
+        }
+        composable<TaskBoardRoute> { entry ->
+            val route = entry.toRoute<TaskBoardRoute>()
+            TaskBoardScreen(
+                route = route,
+                onBack = { navController.popBackStack() },
+                onTaskClick = { taskId -> navController.navigate(TaskDetailRoute(route.groupId, taskId)) },
+                onNewTask = { navController.navigate(TaskEditorRoute(route.groupId)) },
+            )
+        }
+        composable<TaskDetailRoute> { entry ->
+            val route = entry.toRoute<TaskDetailRoute>()
+            TaskDetailScreen(
+                route = route,
+                onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(TaskEditorRoute(route.groupId, route.taskId)) },
+                onOpenChapter = { chapterId, number ->
+                    navController.navigate(ChapterDetailRoute(route.groupId, chapterId, number))
+                },
+            )
+        }
+        composable<TaskEditorRoute> { entry ->
+            val route = entry.toRoute<TaskEditorRoute>()
+            TaskEditorScreen(
+                route = route,
+                onBack = { navController.popBackStack() },
+                onSaved = { taskId ->
+                    if (route.taskId == null) {
+                        // A new task opens in place of the editor, so Back returns to the board.
+                        navController.navigate(TaskDetailRoute(route.groupId, taskId)) {
+                            popUpTo<TaskEditorRoute> { inclusive = true }
+                        }
+                    } else {
+                        navController.popBackStack()
+                    }
+                },
             )
         }
         composable<ProfileRoute> {
