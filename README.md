@@ -2,13 +2,13 @@
 
 A thesis and group-project manager for college students in the Philippines. Groups track who is doing what, which chapters are done, what the adviser said, and what is due next.
 
-> **Status:** in development. Phases 1–4 of 7 are done: accounts and groups, the chapter tracker with
-> versioned drafts, tasks with a list and kanban board, and adviser feedback with a group activity feed.
-> All of it works offline.
+> **Status:** in development. Phases 1–5 of 7 are done: accounts and groups, the chapter tracker with
+> versioned drafts, tasks with a list and kanban board, adviser feedback with a group activity feed, and
+> push notifications, daily deadline reminders and a defense countdown. All of it works offline.
 
 ## Stack
 
-Kotlin · Jetpack Compose (Material 3) · MVVM + Clean Architecture · Hilt · Coroutines & Flow · Navigation Compose · Room · WorkManager · Firebase Auth, Firestore, Cloud Storage and Cloud Functions · Credential Manager (Google sign-in) · JUnit, MockK, Turbine
+Kotlin · Jetpack Compose (Material 3) · MVVM + Clean Architecture · Hilt · Coroutines & Flow · Navigation Compose · Room · DataStore · WorkManager · Firebase Auth, Firestore, Cloud Storage, Cloud Functions and Cloud Messaging · Credential Manager (Google sign-in) · JUnit, MockK, Turbine
 
 ## Project layout
 
@@ -17,7 +17,7 @@ Kotlin · Jetpack Compose (Material 3) · MVVM + Clean Architecture · Hilt · C
 | `domain/` | Pure Kotlin: models, validation, repository interfaces, use cases. No Android or Firebase imports. |
 | `data/` | Room cache, Firestore mapping, repositories, the sync manager that copies Firestore into Room, and the WorkManager upload worker. |
 | `app/` | Compose screens, ViewModels, navigation, and the "aurora glass" design system. |
-| `functions/` | TypeScript Cloud Functions: callables (`joinGroup`, `createInvite`, `deleteGroup`), clean-up triggers (`cleanUpChapter`, `cleanUpTask`, `cleanUpFeedback`), `syncMemberProfiles`, and the triggers that write the activity feed. |
+| `functions/` | TypeScript Cloud Functions: callables (`joinGroup`, `createInvite`, `deleteGroup`), clean-up triggers (`cleanUpChapter`, `cleanUpTask`, `cleanUpFeedback`), `syncMemberProfiles`, and the triggers that write the activity feed and send push notifications. |
 | `firestore.rules`, `storage.rules` | Security rules: users only reach their own profile and the groups they belong to, with per-role limits (e.g. only leaders and advisers approve chapters; members move only tasks assigned to them; only advisers post feedback). The activity feed can't be written from the app at all. |
 
 ## Run it locally (no Firebase project needed)
@@ -46,7 +46,9 @@ The debug build can talk to the Firebase Local Emulator Suite, using a demo conf
    ./gradlew :app:installDebug -Pthesisflow.useEmulators=true
    ```
 
-Google sign-in needs a real project; email sign-up works against the emulators.
+Google sign-in and push notifications need a real project; email sign-up works against the emulators.
+FCM has no emulator, so the Functions emulator logs each push and who would get it instead of sending it.
+Daily reminders are worked out on the phone and do work against the emulators.
 
 ## Use a real Firebase project
 

@@ -28,7 +28,7 @@ fun linkActivities(activities: List<Activity>, chapters: List<Chapter>, tasks: L
             is ActivityEvent.ChapterEvent ->
                 chapterNumbers[event.chapterId]?.let { ActivityLink.ToChapter(event.chapterId, it) }
             is ActivityEvent.TaskEvent -> event.taskId.takeIf { it in taskIds }?.let(ActivityLink::ToTask)
-            is ActivityEvent.MemberJoined, ActivityEvent.MemberLeft -> null
+            is ActivityEvent.MemberJoined, ActivityEvent.MemberLeft, is ActivityEvent.DefenseScheduled -> null
         }
         ActivityEntry(activity, link)
     }

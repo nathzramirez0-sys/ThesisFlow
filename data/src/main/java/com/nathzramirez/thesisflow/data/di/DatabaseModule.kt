@@ -11,6 +11,7 @@ import com.nathzramirez.thesisflow.data.local.dao.FileDao
 import com.nathzramirez.thesisflow.data.local.dao.GroupDao
 import com.nathzramirez.thesisflow.data.local.dao.MemberDao
 import com.nathzramirez.thesisflow.data.local.dao.PendingUploadDao
+import com.nathzramirez.thesisflow.data.local.dao.SentReminderDao
 import com.nathzramirez.thesisflow.data.local.dao.TaskCommentDao
 import com.nathzramirez.thesisflow.data.local.dao.TaskDao
 import com.nathzramirez.thesisflow.data.local.dao.UserDao
@@ -68,4 +69,7 @@ object DatabaseModule {
 
     @Provides
     fun provideActivityDao(database: ThesisFlowDatabase): ActivityDao = database.activityDao()
+
+    @Provides
+    fun provideSentReminderDao(database: ThesisFlowDatabase): SentReminderDao = database.sentReminderDao()
 }

@@ -32,6 +32,7 @@ import com.nathzramirez.thesisflow.feature.profile.ProfileScreen
 import com.nathzramirez.thesisflow.feature.tasks.board.TaskBoardScreen
 import com.nathzramirez.thesisflow.feature.tasks.detail.TaskDetailScreen
 import com.nathzramirez.thesisflow.feature.tasks.editor.TaskEditorScreen
+import com.nathzramirez.thesisflow.notifications.NotificationLink
 
 /**
  * Picks a whole navigation graph from the session state. Each graph has its own
@@ -45,6 +46,7 @@ import com.nathzramirez.thesisflow.feature.tasks.editor.TaskEditorScreen
 fun ThesisFlowRoot(viewModel: MainViewModel) {
     val session by viewModel.session.collectAsStateWithLifecycle()
     val pendingInvite by viewModel.pendingInviteCode.collectAsStateWithLifecycle()
+    val pendingNotification by viewModel.pendingNotificationLink.collectAsStateWithLifecycle()
 
     AuroraBackground {
         when (session) {
@@ -61,6 +63,9 @@ fun ThesisFlowRoot(viewModel: MainViewModel) {
             SessionState.Ready -> MainNavHost(
                 pendingInviteCode = pendingInvite,
                 onInviteHandled = viewModel::onInviteHandled,
+                pendingNotification = pendingNotification,
+                chapterNumber = viewModel::chapterNumber,
+                onNotificationHandled = viewModel::onNotificationHandled,
             )
         }
     }
@@ -92,8 +97,32 @@ private fun OnboardingNavHost() {
 }
 
 @Composable
-private fun MainNavHost(pendingInviteCode: String?, onInviteHandled: () -> Unit) {
+private fun MainNavHost(
+    pendingInviteCode: String?,
+    onInviteHandled: () -> Unit,
+    pendingNotification: NotificationLink?,
+    chapterNumber: suspend (groupId: String, chapterId: String) -> Int?,
+    onNotificationHandled: () -> Unit,
+) {
     val navController = rememberNavController()
+
+    // A tapped notification opens its screen above the group, so Back leads to the group,
+    // then the list. A chapter that isn't on the phone opens the group instead.
+    LaunchedEffect(pendingNotification) {
+        val link = pendingNotification ?: return@LaunchedEffect
+        navController.navigate(GroupOverviewRoute(link.groupId)) {
+            popUpTo<GroupListRoute>()
+            launchSingleTop = true
+        }
+        when (link) {
+            is NotificationLink.ToChapter -> chapterNumber(link.groupId, link.chapterId)?.let { number ->
+                navController.navigate(ChapterDetailRoute(link.groupId, link.chapterId, number))
+            }
+            is NotificationLink.ToTask -> navController.navigate(TaskDetailRoute(link.groupId, link.taskId))
+            is NotificationLink.ToGroup -> Unit
+        }
+        onNotificationHandled()
+    }
 
     // An invite link opened at any time lands on the Join tab with its code filled in.
     LaunchedEffect(pendingInviteCode) {

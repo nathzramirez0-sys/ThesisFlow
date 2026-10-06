@@ -1,5 +1,6 @@
 package com.nathzramirez.thesisflow.data.repository
 
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -23,6 +24,7 @@ import com.nathzramirez.thesisflow.data.remote.safeCall
 import com.nathzramirez.thesisflow.data.remote.toInvite
 import com.nathzramirez.thesisflow.data.remote.toWire
 import com.nathzramirez.thesisflow.domain.model.DefaultChapters
+import com.nathzramirez.thesisflow.domain.model.DefenseKind
 import com.nathzramirez.thesisflow.domain.model.Group
 import com.nathzramirez.thesisflow.domain.model.Invite
 import com.nathzramirez.thesisflow.domain.model.Member
@@ -104,6 +106,7 @@ internal class GroupRepositoryImpl @Inject constructor(
                     Groups.CREATED_BY to uid,
                     Groups.CREATED_AT to FieldValue.serverTimestamp(),
                     Groups.UPDATED_AT to FieldValue.serverTimestamp(),
+                    Groups.UPDATED_BY to uid,
                     Groups.PROPOSAL_DEFENSE_AT to null,
                     Groups.FINAL_DEFENSE_AT to null,
                 ),
@@ -189,6 +192,7 @@ internal class GroupRepositoryImpl @Inject constructor(
                 mapOf(
                     "${Groups.ROLES}.$memberUid" to role.toWire(),
                     Groups.UPDATED_AT to FieldValue.serverTimestamp(),
+                    Groups.UPDATED_BY to auth.requireUid(),
                 ),
             )
             .update(memberRef(groupId, memberUid), Members.ROLE, role.toWire())
@@ -213,6 +217,22 @@ internal class GroupRepositoryImpl @Inject constructor(
         groupDao.deleteWithContent(groupId)
     }
 
+    /** Like every group edit, records who made it: the activity feed names them. */
+    override suspend fun setDefenseDate(groupId: String, kind: DefenseKind, at: Instant?): AppResult<Unit> =
+        safeCall {
+            val field = when (kind) {
+                DefenseKind.PROPOSAL -> Groups.PROPOSAL_DEFENSE_AT
+                DefenseKind.FINAL -> Groups.FINAL_DEFENSE_AT
+            }
+            groupRef(groupId).update(
+                mapOf(
+                    field to at?.let { Timestamp(it) },
+                    Groups.UPDATED_AT to FieldValue.serverTimestamp(),
+                    Groups.UPDATED_BY to auth.requireUid(),
+                ),
+            ).awaitOrQueued()
+        }
+
     private suspend fun removeFromGroup(groupId: String, uid: String) {
         firestore.batch()
             .update(
@@ -221,6 +241,7 @@ internal class GroupRepositoryImpl @Inject constructor(
                     Groups.MEMBER_IDS to FieldValue.arrayRemove(uid),
                     "${Groups.ROLES}.$uid" to FieldValue.delete(),
                     Groups.UPDATED_AT to FieldValue.serverTimestamp(),
+                    Groups.UPDATED_BY to auth.requireUid(),
                 ),
             )
             .delete(memberRef(groupId, uid))

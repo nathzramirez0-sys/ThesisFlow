@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.nathzramirez.thesisflow.designsystem.theme.ThesisFlowTheme
 import com.nathzramirez.thesisflow.navigation.ThesisFlowRoot
+import com.nathzramirez.thesisflow.notifications.NotificationLink
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -23,7 +24,7 @@ class MainActivity : ComponentActivity() {
         splashScreen.setKeepOnScreenCondition { viewModel.session.value == SessionState.Loading }
 
         enableEdgeToEdge()
-        if (savedInstanceState == null) viewModel.onLinkOpened(intent?.dataString)
+        if (savedInstanceState == null) handle(intent)
 
         setContent {
             ThesisFlowTheme {
@@ -32,9 +33,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** singleTop: a link tapped while the app is open arrives here instead of a new activity. */
+    /** singleTop: a link or notification tapped while the app is open arrives here instead of a new activity. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        viewModel.onLinkOpened(intent.dataString)
+        handle(intent)
+    }
+
+    private fun handle(intent: Intent?) {
+        viewModel.onLinkOpened(intent?.dataString)
+        NotificationLink.fromIntent(intent)?.let(viewModel::onNotificationOpened)
     }
 }

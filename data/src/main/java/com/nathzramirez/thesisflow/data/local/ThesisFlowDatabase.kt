@@ -12,6 +12,7 @@ import com.nathzramirez.thesisflow.data.local.dao.FileDao
 import com.nathzramirez.thesisflow.data.local.dao.GroupDao
 import com.nathzramirez.thesisflow.data.local.dao.MemberDao
 import com.nathzramirez.thesisflow.data.local.dao.PendingUploadDao
+import com.nathzramirez.thesisflow.data.local.dao.SentReminderDao
 import com.nathzramirez.thesisflow.data.local.dao.TaskCommentDao
 import com.nathzramirez.thesisflow.data.local.dao.TaskDao
 import com.nathzramirez.thesisflow.data.local.dao.UserDao
@@ -23,6 +24,7 @@ import com.nathzramirez.thesisflow.data.local.entity.FileEntity
 import com.nathzramirez.thesisflow.data.local.entity.GroupEntity
 import com.nathzramirez.thesisflow.data.local.entity.MemberEntity
 import com.nathzramirez.thesisflow.data.local.entity.PendingUploadEntity
+import com.nathzramirez.thesisflow.data.local.entity.SentReminderEntity
 import com.nathzramirez.thesisflow.data.local.entity.TaskAssigneeEntity
 import com.nathzramirez.thesisflow.data.local.entity.TaskCommentEntity
 import com.nathzramirez.thesisflow.data.local.entity.TaskEntity
@@ -48,13 +50,15 @@ import com.nathzramirez.thesisflow.data.local.entity.UserEntity
         TaskCommentEntity::class,
         FeedbackEntity::class,
         ActivityEntity::class,
+        SentReminderEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),
+        AutoMigration(from = 4, to = 5),
     ],
 )
 @TypeConverters(Converters::class)
@@ -70,4 +74,5 @@ abstract class ThesisFlowDatabase : RoomDatabase() {
     abstract fun taskCommentDao(): TaskCommentDao
     abstract fun feedbackDao(): FeedbackDao
     abstract fun activityDao(): ActivityDao
+    abstract fun sentReminderDao(): SentReminderDao
 }

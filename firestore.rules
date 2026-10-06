@@ -72,6 +72,17 @@ service cloud.firestore {
           && data.updatedAt == request.time;
       }
 
+      // This phone's push token, one document per installation. Only the owner
+      // reads or writes it; the Cloud Functions read it to send pushes.
+      match /devices/{deviceId} {
+        allow read, delete: if isSelf(uid);
+        allow create, update: if isSelf(uid)
+          && request.resource.data.keys().hasOnly(['token', 'platform', 'updatedAt'])
+          && isText(request.resource.data.token, 1, 4096)
+          && request.resource.data.platform == 'android'
+          && request.resource.data.updatedAt == request.time;
+      }
+
       // Email and createdAt can't change; finishing onboarding needs a real profile.
       function validUserUpdate() {
         let data = request.resource.data;
@@ -114,9 +125,10 @@ service cloud.firestore {
         let data = request.resource.data;
         return data.keys().hasOnly([
             'name', 'thesisTitle', 'course', 'school', 'memberIds', 'roles',
-            'createdBy', 'createdAt', 'updatedAt', 'proposalDefenseAt', 'finalDefenseAt'])
+            'createdBy', 'createdAt', 'updatedAt', 'updatedBy', 'proposalDefenseAt', 'finalDefenseAt'])
           && validGroupFields(data)
           && data.createdBy == request.auth.uid
+          && data.updatedBy == request.auth.uid
           && data.memberIds == [request.auth.uid]
           && data.roles[request.auth.uid] == 'leader'
           && data.createdAt == request.time
@@ -129,6 +141,7 @@ service cloud.firestore {
         let changed = after.diff(before).affectedKeys();
         return validGroupFields(after)
           && after.updatedAt == request.time
+          && after.updatedBy == request.auth.uid
           && (leaderEdit(before, after, changed) || selfLeave(before, after, changed));
       }
 
@@ -138,14 +151,14 @@ service cloud.firestore {
         return before.roles[request.auth.uid] == 'leader'
           && changed.hasOnly([
               'name', 'thesisTitle', 'course', 'school', 'roles', 'memberIds',
-              'updatedAt', 'proposalDefenseAt', 'finalDefenseAt'])
+              'updatedAt', 'updatedBy', 'proposalDefenseAt', 'finalDefenseAt'])
           && before.memberIds.hasAll(after.memberIds);
       }
 
       // Anyone may remove themselves, touching nothing else.
       function selfLeave(before, after, changed) {
         let me = [request.auth.uid].toSet();
-        return changed.hasOnly(['memberIds', 'roles', 'updatedAt'])
+        return changed.hasOnly(['memberIds', 'roles', 'updatedAt', 'updatedBy'])
           && after.memberIds.toSet() == before.memberIds.toSet().difference(me)
           && before.roles.diff(after.roles).affectedKeys() == me;
       }

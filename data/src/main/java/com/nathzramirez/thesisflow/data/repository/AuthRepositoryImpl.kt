@@ -8,6 +8,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.nathzramirez.thesisflow.data.di.IoDispatcher
 import com.nathzramirez.thesisflow.data.local.ThesisFlowDatabase
+import com.nathzramirez.thesisflow.data.push.PushTokenRegistrar
 import com.nathzramirez.thesisflow.data.remote.safeCall
 import com.nathzramirez.thesisflow.data.remote.uidFlow
 import com.nathzramirez.thesisflow.data.upload.LocalFiles
@@ -34,6 +35,7 @@ internal class AuthRepositoryImpl @Inject constructor(
     private val database: ThesisFlowDatabase,
     private val uploadScheduler: UploadScheduler,
     private val localFiles: LocalFiles,
+    private val pushTokens: PushTokenRegistrar,
     @param:ApplicationContext private val context: Context,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : AuthRepository {
@@ -60,6 +62,8 @@ internal class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun signOut() {
+        // While still signed in: the rules only let the owner remove the device entry.
+        pushTokens.unregisterCurrentUser()
         auth.signOut()
         // Forget the chosen Google account, so the next sign-in shows the account picker again.
         try {

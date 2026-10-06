@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+: asked for in the app, with a reason shown first. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Backups are off: everything is either in Firestore or rebuilt from it. -->
     <application
@@ -41,6 +43,15 @@
                     android:scheme="https" />
             </intent-filter>
         </activity>
+
+        <!-- Receives FCM pushes; not exported, only Google Play services delivers to it. -->
+        <service
+            android:name=".notifications.ThesisFlowMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <!-- Shares downloaded files with viewer apps through content:// URIs. -->
         <provider

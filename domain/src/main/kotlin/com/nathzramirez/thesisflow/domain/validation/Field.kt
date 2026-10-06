@@ -16,4 +16,5 @@ enum class Field {
     TASK_DESCRIPTION,
     COMMENT,
     FEEDBACK,
+    DEFENSE_DATE,
 }

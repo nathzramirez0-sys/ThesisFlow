@@ -18,6 +18,8 @@
     <string name="action_change">Change</string>
     <string name="action_clear">Clear</string>
     <string name="action_open">Open</string>
+    <string name="action_next">Next</string>
+    <string name="action_done">Done</string>
     <string name="loading">Loading…</string>
 
     <!-- Auth -->
@@ -335,6 +337,107 @@
         <item quantity="one">%d hour ago</item>
         <item quantity="other">%d hours ago</item>
     </plurals>
+
+    <!-- Defense dates -->
+    <string name="defense_label">Defense</string>
+    <string name="defense_title_proposal">Proposal defense</string>
+    <string name="defense_title_final">Final defense</string>
+    <string name="defense_kind_proposal">proposal</string>
+    <string name="defense_kind_final">final</string>
+    <string name="defense_edit">Edit</string>
+    <string name="defense_all_done">Both defenses are behind you. Congratulations!</string>
+    <string name="defense_line">%1$s · %2$s</string>
+    <string name="defense_line_done">%1$s · done %2$s</string>
+    <string name="defense_setup_title">Set your defense dates</string>
+    <string name="defense_setup_body">Add the proposal and final defense, and everyone in the group gets a countdown and reminders.</string>
+    <string name="defense_setup_action">Set defense dates</string>
+    <string name="defense_dialog_title">Defense dates</string>
+    <string name="defense_not_set">Not set</string>
+    <string name="defense_set">Set</string>
+    <string name="defense_time_title">What time does it start?</string>
+    <string name="defense_pill_today">%1$s today</string>
+    <string name="defense_pill_tomorrow">%1$s tomorrow</string>
+    <plurals name="defense_pill_days">
+        <item quantity="one">%2$s in %1$d day</item>
+        <item quantity="other">%2$s in %1$d days</item>
+    </plurals>
+    <string name="countdown_days">Days</string>
+    <string name="countdown_hours">Hrs</string>
+    <string name="countdown_minutes">Min</string>
+    <string name="countdown_description">%1$s in %2$d days, %3$d hours and %4$d minutes</string>
+    <string name="validation_final_before_proposal">The final defense has to come after the proposal defense.</string>
+
+    <!-- Notification settings -->
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_blocked">Notifications are off for ThesisFlow.</string>
+    <string name="notifications_turn_on">Turn on</string>
+    <string name="notifications_not_now">Not now</string>
+    <string name="notifications_push">Group updates</string>
+    <string name="notifications_push_body">Adviser feedback, reviews, approvals, your tasks and new members</string>
+    <string name="notifications_reminders">Daily reminders</string>
+    <string name="notifications_reminders_body">What\'s due soon, every day at %1$s. Works offline.</string>
+    <string name="notifications_reminder_time">Reminder time</string>
+    <string name="notifications_categories">Sounds and categories</string>
+    <string name="notifications_prompt_title">Don\'t miss your adviser\'s feedback</string>
+    <string name="notifications_prompt_body">Turn on notifications to hear about reviews, tasks and deadlines as they happen.</string>
+
+    <!-- Notification channels -->
+    <string name="channel_reviews">Feedback and reviews</string>
+    <string name="channel_reviews_body">Adviser feedback, chapters sent for review, approvals and revisions</string>
+    <string name="channel_tasks">Tasks</string>
+    <string name="channel_tasks_body">Tasks assigned to you, and tasks finished in groups you lead</string>
+    <string name="channel_reminders">Deadline reminders</string>
+    <string name="channel_reminders_body">A daily summary of tasks, chapters and defenses coming up</string>
+    <string name="channel_group">Group updates</string>
+    <string name="channel_group_body">New members and defense dates</string>
+
+    <!-- Push notifications -->
+    <string name="push_member_joined_title">New member</string>
+    <string name="push_member_joined">%1$s joined as %2$s</string>
+    <string name="push_review_title">Ready for your review</string>
+    <string name="push_review">%1$s sent “%2$s” for review</string>
+    <string name="push_approved_title">Chapter approved</string>
+    <string name="push_approved">%1$s approved “%2$s”</string>
+    <string name="push_revisions_title">Revisions requested</string>
+    <string name="push_revisions">%1$s moved “%2$s” to Revisions</string>
+    <string name="push_feedback_title">Feedback on “%1$s”</string>
+    <string name="push_feedback_version_title">Feedback on v%1$d of “%2$s”</string>
+    <string name="push_feedback">%1$s: %2$s</string>
+    <string name="push_reopened_title">Feedback reopened</string>
+    <string name="push_reopened">%1$s reopened a comment on “%2$s”</string>
+    <string name="push_resolved_title">Feedback resolved</string>
+    <string name="push_resolved">%1$s resolved your comment on “%2$s”</string>
+    <string name="push_assigned_title">New task for you</string>
+    <string name="push_assigned">%1$s assigned you “%2$s”</string>
+    <string name="push_task_done_title">Task finished</string>
+    <string name="push_task_done">%1$s finished “%2$s”</string>
+    <string name="push_defense_proposal_title">Proposal defense scheduled</string>
+    <string name="push_defense_final_title">Final defense scheduled</string>
+    <string name="push_defense">%1$s set it for %2$s</string>
+
+    <!-- Daily reminders -->
+    <plurals name="reminders_title">
+        <item quantity="one">%1$d reminder for %2$s</item>
+        <item quantity="other">%1$d reminders for %2$s</item>
+    </plurals>
+    <string name="reminder_task_today">“%1$s” is due today</string>
+    <string name="reminder_task_tomorrow">“%1$s” is due tomorrow</string>
+    <string name="reminder_task_overdue">“%1$s” is overdue</string>
+    <string name="reminder_chapter_today">Chapter deadline today: “%1$s”</string>
+    <string name="reminder_chapter_tomorrow">Chapter deadline tomorrow: “%1$s”</string>
+    <string name="reminder_chapter_overdue">Chapter deadline passed: “%1$s”</string>
+    <plurals name="reminder_chapter_soon">
+        <item quantity="one">Chapter deadline in %1$d day: “%2$s”</item>
+        <item quantity="other">Chapter deadline in %1$d days: “%2$s”</item>
+    </plurals>
+    <string name="reminder_defense_today">Your %1$s defense is today. Good luck!</string>
+    <string name="reminder_defense_tomorrow">Your %1$s defense is tomorrow</string>
+    <plurals name="reminder_defense_soon">
+        <item quantity="one">Your %2$s defense is in %1$d day</item>
+        <item quantity="other">Your %2$s defense is in %1$d days</item>
+    </plurals>
+    <string name="activity_defense_proposal">%1$s scheduled the proposal defense</string>
+    <string name="activity_defense_final">%1$s scheduled the final defense</string>
 
     <!-- Validation -->
     <string name="validation_required_email">Enter your email</string>

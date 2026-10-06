@@ -67,14 +67,19 @@ import com.nathzramirez.thesisflow.feature.activity.ActivityEntry
 import com.nathzramirez.thesisflow.feature.activity.ActivityLink
 import com.nathzramirez.thesisflow.feature.activity.ActivityRow
 import com.nathzramirez.thesisflow.navigation.GroupOverviewRoute
+import com.nathzramirez.thesisflow.domain.model.DefenseKind
 import com.nathzramirez.thesisflow.domain.model.Group
 import com.nathzramirez.thesisflow.domain.model.Invite
 import com.nathzramirez.thesisflow.domain.model.Member
 import com.nathzramirez.thesisflow.domain.model.Role
 import com.nathzramirez.thesisflow.domain.model.ThesisProgress
+import com.nathzramirez.thesisflow.domain.result.DomainError
+import com.nathzramirez.thesisflow.domain.validation.Field
+import com.nathzramirez.thesisflow.ui.DateTimePickerDialog
 import com.nathzramirez.thesisflow.ui.messageRes
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -104,13 +109,21 @@ fun GroupOverviewScreen(
     val context = LocalContext.current
     var confirmation by remember { mutableStateOf<Confirmation?>(null) }
     var menuOpen by remember { mutableStateOf(false) }
+    var editingDefenses by remember { mutableStateOf(false) }
+    var pickingDefense by remember { mutableStateOf<DefenseKind?>(null) }
 
     LaunchedEffect(state.isClosed) {
         if (state.isClosed) onBack()
     }
     LaunchedEffect(state.error) {
         val error = state.error ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(context.getString(error.messageRes()))
+        // The only field error here is a final defense set before the proposal.
+        val message = if ((error as? DomainError.InvalidInput)?.fieldErrors?.containsKey(Field.DEFENSE_DATE) == true) {
+            R.string.validation_final_before_proposal
+        } else {
+            error.messageRes()
+        }
+        snackbarHostState.showSnackbar(context.getString(message))
         viewModel.errorShown()
     }
 
@@ -161,6 +174,13 @@ fun GroupOverviewScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item { Hero(group) }
+            item {
+                DefenseCard(
+                    group = group,
+                    canEdit = group.myRole.canManageGroup,
+                    onEdit = { editingDefenses = true },
+                )
+            }
             item { ChaptersCard(progress = state.progress, openFeedback = state.openFeedback, onClick = onOpenChapters) }
             item { TasksCard(summary = state.tasks, onClick = onOpenTasks) }
             item {
@@ -213,6 +233,33 @@ fun GroupOverviewScreen(
                 }
             }
         }
+    }
+
+    if (editingDefenses && group != null) {
+        DefenseDatesDialog(
+            group = group,
+            onPick = { kind ->
+                editingDefenses = false
+                pickingDefense = kind
+            },
+            onClear = { kind -> viewModel.setDefense(kind, null) },
+            onDismiss = { editingDefenses = false },
+        )
+    }
+    pickingDefense?.let { kind ->
+        DateTimePickerDialog(
+            timeTitle = stringResource(R.string.defense_time_title),
+            current = when (kind) {
+                DefenseKind.PROPOSAL -> group?.proposalDefenseAt
+                DefenseKind.FINAL -> group?.finalDefenseAt
+            },
+            defaultTime = DEFAULT_DEFENSE_TIME,
+            onPick = { at ->
+                pickingDefense = null
+                viewModel.setDefense(kind, at)
+            },
+            onDismiss = { pickingDefense = null },
+        )
     }
 
     confirmation?.let { current ->
@@ -561,3 +608,6 @@ private fun shareInvite(context: Context, groupName: String, code: String) {
     }
     context.startActivity(Intent.createChooser(send, context.getString(R.string.invite_share_chooser)))
 }
+
+/** Panels usually start in the morning; the picker opens here when no time is set yet. */
+private val DEFAULT_DEFENSE_TIME: LocalTime = LocalTime.of(9, 0)

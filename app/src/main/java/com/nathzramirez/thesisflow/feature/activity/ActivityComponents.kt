@@ -32,6 +32,7 @@ import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
 import com.nathzramirez.thesisflow.domain.model.Activity
 import com.nathzramirez.thesisflow.domain.model.ActivityEvent
 import com.nathzramirez.thesisflow.domain.model.ChapterStatus
+import com.nathzramirez.thesisflow.domain.model.DefenseKind
 import com.nathzramirez.thesisflow.domain.model.TaskStatus
 import com.nathzramirez.thesisflow.feature.tasks.taskStatusLabel
 import com.nathzramirez.thesisflow.ui.relativeTimeText
@@ -88,6 +89,7 @@ private fun eventColor(event: ActivityEvent, aurora: AuroraColors): Color = when
     is ActivityEvent.FeedbackResolved -> aurora.statusApproved
     is ActivityEvent.TaskCreated -> aurora.gradientStart
     is ActivityEvent.TaskStatusChanged -> aurora.taskStatusColor(event.status)
+    is ActivityEvent.DefenseScheduled -> aurora.gradientEnd
 }
 
 /** The sentence with the actor's name in bold. */
@@ -115,6 +117,13 @@ private fun activitySentence(activity: Activity): AnnotatedString {
         } else {
             stringResource(R.string.activity_task_status, actor, event.taskTitle, taskStatusLabel(event.status))
         }
+        is ActivityEvent.DefenseScheduled -> stringResource(
+            when (event.kind) {
+                DefenseKind.PROPOSAL -> R.string.activity_defense_proposal
+                DefenseKind.FINAL -> R.string.activity_defense_final
+            },
+            actor,
+        )
     }
     return buildAnnotatedString {
         append(text)

@@ -105,6 +105,7 @@ export const joinGroup = onCall(async (request) => {
       memberIds: FieldValue.arrayUnion(uid),
       [`roles.${uid}`]: role,
       updatedAt: FieldValue.serverTimestamp(),
+      updatedBy: uid,
     });
     tx.set(groupRef.collection(Collections.members).doc(uid), {
       displayName: user.get("displayName") ?? "",

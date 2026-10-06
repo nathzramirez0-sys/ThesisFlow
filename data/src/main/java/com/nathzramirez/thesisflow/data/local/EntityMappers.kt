@@ -14,6 +14,7 @@ import com.nathzramirez.thesisflow.data.local.entity.UserEntity
 import com.nathzramirez.thesisflow.data.local.entity.VersionWithDetails
 import com.nathzramirez.thesisflow.data.remote.ActivityTypes
 import com.nathzramirez.thesisflow.data.remote.chapterStatusFromWire
+import com.nathzramirez.thesisflow.data.remote.defenseKindFromWire
 import com.nathzramirez.thesisflow.data.remote.roleFromWire
 import com.nathzramirez.thesisflow.data.remote.taskStatusFromWire
 import com.nathzramirez.thesisflow.domain.model.Activity
@@ -187,5 +188,6 @@ private fun ActivityEntity.toEvent(): ActivityEvent? = when (type) {
     ActivityTypes.TASK_STATUS -> targetId?.let { id ->
         taskStatusFromWire(detail)?.let { ActivityEvent.TaskStatusChanged(id, targetTitle, it) }
     }
+    ActivityTypes.DEFENSE_SCHEDULED -> defenseKindFromWire(detail)?.let { ActivityEvent.DefenseScheduled(it) }
     else -> null
 }

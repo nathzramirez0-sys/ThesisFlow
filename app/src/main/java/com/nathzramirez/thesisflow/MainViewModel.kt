@@ -5,15 +5,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nathzramirez.thesisflow.domain.model.AuthState
 import com.nathzramirez.thesisflow.domain.repository.AuthRepository
+import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
 import com.nathzramirez.thesisflow.domain.repository.UserRepository
 import com.nathzramirez.thesisflow.domain.result.onFailure
+import com.nathzramirez.thesisflow.notifications.NotificationLink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onEach
@@ -35,6 +39,7 @@ sealed interface SessionState {
 class MainViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
+    private val chapterRepository: ChapterRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -76,6 +81,29 @@ class MainViewModel @Inject constructor(
     fun onInviteHandled() {
         savedStateHandle[KEY_PENDING_INVITE] = null
     }
+
+    private val _pendingNotificationLink = MutableStateFlow<NotificationLink?>(null)
+
+    /** A tapped notification's screen, kept until the main graph is showing to open it. */
+    val pendingNotificationLink: StateFlow<NotificationLink?> = _pendingNotificationLink.asStateFlow()
+
+    fun onNotificationOpened(link: NotificationLink) {
+        _pendingNotificationLink.value = link
+    }
+
+    fun onNotificationHandled() {
+        _pendingNotificationLink.value = null
+    }
+
+    /**
+     * The chapter's position in its list, which the detail screen shows as its
+     * number; null when the chapter isn't on this phone (deleted, or not synced yet).
+     */
+    suspend fun chapterNumber(groupId: String, chapterId: String): Int? =
+        chapterRepository.observeChapters(groupId).first()
+            .indexOfFirst { it.id == chapterId }
+            .takeIf { it >= 0 }
+            ?.plus(1)
 
     fun retryProfile() = loadProfile()
 

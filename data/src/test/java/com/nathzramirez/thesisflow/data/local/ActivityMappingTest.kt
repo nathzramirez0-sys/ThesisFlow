@@ -3,6 +3,7 @@ package com.nathzramirez.thesisflow.data.local
 import com.nathzramirez.thesisflow.data.local.entity.ActivityEntity
 import com.nathzramirez.thesisflow.domain.model.ActivityEvent
 import com.nathzramirez.thesisflow.domain.model.ChapterStatus
+import com.nathzramirez.thesisflow.domain.model.DefenseKind
 import com.nathzramirez.thesisflow.domain.model.Role
 import com.nathzramirez.thesisflow.domain.model.TaskStatus
 import org.junit.Assert.assertEquals
@@ -42,6 +43,10 @@ class ActivityMappingTest {
         assertEquals(
             ActivityEvent.TaskStatusChanged("ch-1", "Introduction", TaskStatus.DONE),
             entry("task_status", detail = "done").toDomain()?.event,
+        )
+        assertEquals(
+            ActivityEvent.DefenseScheduled(DefenseKind.FINAL),
+            entry("defense_scheduled", null, "final").toDomain()?.event,
         )
     }
 

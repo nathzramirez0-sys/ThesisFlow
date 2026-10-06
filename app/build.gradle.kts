@@ -88,6 +88,8 @@ dependencies {
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.work.runtime)
     implementation(libs.androidx.hilt.work)
+    // Generates the factories that let HiltWorkerFactory build @HiltWorker classes in this module.
+    ksp(libs.androidx.hilt.compiler)
 
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
@@ -95,6 +97,10 @@ dependencies {
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+
+    // The push service and notification handling live in the app; the token bookkeeping is in :data.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
 
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

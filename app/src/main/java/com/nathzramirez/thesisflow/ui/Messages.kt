@@ -54,6 +54,7 @@ fun validationMessage(field: Field, error: ValidationError): String = when (erro
     ValidationError.TOO_SHORT -> stringResource(R.string.validation_min_length, minLength(field))
     ValidationError.TOO_LONG -> stringResource(R.string.validation_max_length, maxLength(field))
     ValidationError.INVALID_INVITE_CODE -> stringResource(R.string.validation_invite_code)
+    ValidationError.FINAL_BEFORE_PROPOSAL -> stringResource(R.string.validation_final_before_proposal)
 }
 
 @StringRes
@@ -70,7 +71,7 @@ private fun requiredMessage(field: Field): Int = when (field) {
     Field.TASK_TITLE -> R.string.validation_required_task_title
     Field.COMMENT -> R.string.validation_required_comment
     Field.FEEDBACK -> R.string.validation_required_feedback
-    Field.THESIS_TITLE, Field.VERSION_NOTE, Field.TASK_DESCRIPTION -> R.string.validation_required
+    Field.THESIS_TITLE, Field.VERSION_NOTE, Field.TASK_DESCRIPTION, Field.DEFENSE_DATE -> R.string.validation_required
 }
 
 private fun minLength(field: Field): Int = when (field) {

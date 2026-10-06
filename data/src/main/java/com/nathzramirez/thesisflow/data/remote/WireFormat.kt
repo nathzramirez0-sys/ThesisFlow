@@ -1,6 +1,7 @@
 package com.nathzramirez.thesisflow.data.remote
 
 import com.nathzramirez.thesisflow.domain.model.ChapterStatus
+import com.nathzramirez.thesisflow.domain.model.DefenseKind
 import com.nathzramirez.thesisflow.domain.model.FileKind
 import com.nathzramirez.thesisflow.domain.model.Role
 import com.nathzramirez.thesisflow.domain.model.TaskPriority
@@ -92,4 +93,11 @@ internal object ActivityTypes {
     const val FEEDBACK_REOPENED = "feedback_reopened"
     const val TASK_CREATED = "task_created"
     const val TASK_STATUS = "task_status"
+    const val DEFENSE_SCHEDULED = "defense_scheduled"
+}
+
+internal fun defenseKindFromWire(value: String?): DefenseKind? = when (value) {
+    "proposal" -> DefenseKind.PROPOSAL
+    "final" -> DefenseKind.FINAL
+    else -> null
 }

@@ -34,6 +34,7 @@ import com.nathzramirez.thesisflow.designsystem.component.Avatar
 import com.nathzramirez.thesisflow.designsystem.component.GhostButton
 import com.nathzramirez.thesisflow.designsystem.component.GlassCard
 import com.nathzramirez.thesisflow.designsystem.component.GradientButton
+import com.nathzramirez.thesisflow.feature.notifications.NotificationSettingsSection
 import com.nathzramirez.thesisflow.ui.messageRes
 
 @Composable
@@ -98,6 +99,7 @@ fun ProfileScreen(
                     loading = state.isSaving,
                     enabled = !state.isLoading,
                 )
+                NotificationSettingsSection(modifier = Modifier.padding(top = 12.dp))
                 GhostButton(
                     text = stringResource(R.string.action_sign_out),
                     onClick = viewModel::signOut,

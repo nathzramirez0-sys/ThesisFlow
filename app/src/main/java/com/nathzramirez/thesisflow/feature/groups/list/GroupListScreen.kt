@@ -39,6 +39,16 @@ import com.nathzramirez.thesisflow.designsystem.component.HudLabel
 import com.nathzramirez.thesisflow.designsystem.component.MessageScreen
 import com.nathzramirez.thesisflow.designsystem.component.ProgressRing
 import com.nathzramirez.thesisflow.designsystem.component.RoleBadge
+import com.nathzramirez.thesisflow.designsystem.component.GlowPill
+import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
+import com.nathzramirez.thesisflow.domain.model.DefenseSchedule
+import com.nathzramirez.thesisflow.domain.model.Group
+import com.nathzramirez.thesisflow.feature.groups.overview.defenseTitle
+import com.nathzramirez.thesisflow.feature.notifications.NotificationPromptCard
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 @Composable
 fun GroupListScreen(
@@ -91,6 +101,7 @@ fun GroupListScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 item { Header(loaded.firstName) }
+                item { NotificationPromptCard() }
                 items(loaded.groups, key = { it.group.id }) { summary ->
                     GroupCard(summary = summary, onClick = { onGroupClick(summary.group.id) })
                 }
@@ -138,8 +149,27 @@ private fun GroupCard(summary: GroupSummary, onClick: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                NextDefensePill(group)
             }
             ProgressRing(percent = summary.progress.percent, size = 68.dp, strokeWidth = 6.dp)
         }
     }
+}
+
+/** "Proposal defense in 12 days", counted in calendar days; nothing when no defense is ahead. */
+@Composable
+private fun NextDefensePill(group: Group) {
+    val now = Instant.now()
+    val next = DefenseSchedule.next(group, now) ?: return
+    val zone = ZoneId.systemDefault()
+    val days = ChronoUnit.DAYS.between(LocalDate.now(zone), next.at.atZone(zone).toLocalDate()).toInt()
+    val title = defenseTitle(next.kind)
+    GlowPill(
+        label = when (days) {
+            0 -> stringResource(R.string.defense_pill_today, title)
+            1 -> stringResource(R.string.defense_pill_tomorrow, title)
+            else -> pluralStringResource(R.plurals.defense_pill_days, days, days, title)
+        },
+        color = AuroraTheme.colors.gradientEnd,
+    )
 }

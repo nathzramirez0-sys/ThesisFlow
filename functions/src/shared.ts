@@ -4,6 +4,7 @@ import { CallableRequest, FunctionsErrorCode, HttpsError } from "firebase-functi
 /** Same names as FirestoreSchema.kt in the Android data module. */
 export const Collections = {
   users: "users",
+  devices: "devices",
   groups: "groups",
   members: "members",
   invites: "invites",

@@ -3,6 +3,7 @@ package com.nathzramirez.thesisflow.feature.groups.overview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nathzramirez.thesisflow.domain.model.AuthState
+import com.nathzramirez.thesisflow.domain.model.DefenseKind
 import com.nathzramirez.thesisflow.domain.model.Group
 import com.nathzramirez.thesisflow.domain.model.Invite
 import com.nathzramirez.thesisflow.domain.model.Member
@@ -19,6 +20,7 @@ import com.nathzramirez.thesisflow.domain.result.AppResult
 import com.nathzramirez.thesisflow.domain.result.DomainError
 import com.nathzramirez.thesisflow.domain.usecase.group.ChangeMemberRoleUseCase
 import com.nathzramirez.thesisflow.domain.usecase.group.LeaveGroupUseCase
+import com.nathzramirez.thesisflow.domain.usecase.group.SetDefenseDateUseCase
 import com.nathzramirez.thesisflow.feature.activity.ActivityEntry
 import com.nathzramirez.thesisflow.feature.activity.linkActivities
 import com.nathzramirez.thesisflow.navigation.GroupOverviewRoute
@@ -86,6 +88,7 @@ class GroupOverviewViewModel @AssistedInject constructor(
     activityRepository: ActivityRepository,
     private val changeMemberRole: ChangeMemberRoleUseCase,
     private val leaveGroup: LeaveGroupUseCase,
+    private val setDefenseDate: SetDefenseDateUseCase,
 ) : ViewModel() {
 
     @AssistedFactory
@@ -167,6 +170,9 @@ class GroupOverviewViewModel @AssistedInject constructor(
     fun removeMember(member: Member) = runAction { groupRepository.removeMember(groupId, member.uid) }
 
     fun leave() = runAction(closeOnSuccess = true) { leaveGroup(groupId) }
+
+    /** Sets, moves or (with null) clears a defense date. */
+    fun setDefense(kind: DefenseKind, at: Instant?) = runAction { setDefenseDate(groupId, kind, at) }
 
     fun delete() = runAction(closeOnSuccess = true) { groupRepository.deleteGroup(groupId) }
 

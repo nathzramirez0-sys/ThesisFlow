@@ -9,4 +9,5 @@ enum class ValidationError {
     TOO_SHORT,
     TOO_LONG,
     INVALID_INVITE_CODE,
+    FINAL_BEFORE_PROPOSAL,
 }

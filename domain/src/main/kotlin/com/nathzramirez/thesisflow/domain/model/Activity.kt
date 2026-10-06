@@ -78,4 +78,7 @@ sealed interface ActivityEvent {
         override val taskTitle: String,
         val status: TaskStatus,
     ) : TaskEvent
+
+    /** A leader set or moved a defense date; the date itself is on the group's countdown. */
+    data class DefenseScheduled(val kind: DefenseKind) : ActivityEvent
 }

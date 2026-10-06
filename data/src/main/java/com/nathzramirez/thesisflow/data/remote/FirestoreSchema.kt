@@ -29,8 +29,18 @@ internal object FirestoreSchema {
         const val CREATED_BY = "createdBy"
         const val CREATED_AT = "createdAt"
         const val UPDATED_AT = "updatedAt"
+        const val UPDATED_BY = "updatedBy"
         const val PROPOSAL_DEFENSE_AT = "proposalDefenseAt"
         const val FINAL_DEFENSE_AT = "finalDefenseAt"
+    }
+
+    /** `users/{uid}/devices/{deviceId}`: where to push to. Read by the Cloud Functions. */
+    object Devices {
+        const val COLLECTION = "devices"
+        const val TOKEN = "token"
+        const val PLATFORM = "platform"
+        const val PLATFORM_ANDROID = "android"
+        const val UPDATED_AT = "updatedAt"
     }
 
     /** `groups/{groupId}/members/{uid}` */

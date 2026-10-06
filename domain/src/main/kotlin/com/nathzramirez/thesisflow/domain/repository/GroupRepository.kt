@@ -1,11 +1,13 @@
 package com.nathzramirez.thesisflow.domain.repository
 
+import com.nathzramirez.thesisflow.domain.model.DefenseKind
 import com.nathzramirez.thesisflow.domain.model.Group
 import com.nathzramirez.thesisflow.domain.model.Invite
 import com.nathzramirez.thesisflow.domain.model.Member
 import com.nathzramirez.thesisflow.domain.model.Role
 import com.nathzramirez.thesisflow.domain.result.AppResult
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 
 interface GroupRepository {
     fun observeMyGroups(): Flow<List<Group>>
@@ -36,6 +38,9 @@ interface GroupRepository {
     suspend fun removeMember(groupId: String, memberUid: String): AppResult<Unit>
 
     suspend fun leaveGroup(groupId: String): AppResult<Unit>
+
+    /** Sets or clears ([at] null) a defense date. Leader-only; works offline. */
+    suspend fun setDefenseDate(groupId: String, kind: DefenseKind, at: Instant?): AppResult<Unit>
 
     /** Deletes the group and everything in it. Leader-only. */
     suspend fun deleteGroup(groupId: String): AppResult<Unit>
