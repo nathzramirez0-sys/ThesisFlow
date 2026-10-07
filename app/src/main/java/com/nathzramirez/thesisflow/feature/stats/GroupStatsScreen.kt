@@ -42,6 +42,7 @@ import com.nathzramirez.thesisflow.designsystem.theme.SpaceGrotesk
 import com.nathzramirez.thesisflow.domain.model.ChapterStatus
 import com.nathzramirez.thesisflow.domain.model.GroupStats
 import com.nathzramirez.thesisflow.domain.model.MemberContribution
+import com.nathzramirez.thesisflow.domain.model.PersonName
 import com.nathzramirez.thesisflow.domain.model.TaskStatus
 import com.nathzramirez.thesisflow.feature.tasks.taskStatusLabel
 import com.nathzramirez.thesisflow.navigation.GroupStatsRoute
@@ -207,7 +208,7 @@ private fun ContributionsCard(contributions: List<MemberContribution>) {
             if (showChart) {
                 StackedColumnChart(
                     series = series,
-                    xLabels = contributions.map { it.member.displayName.substringBefore(' ').ifBlank { "?" } },
+                    xLabels = contributions.map { PersonName.firstName(it.member.displayName).ifBlank { "?" } },
                     description = stringResource(R.string.stats_contributions_title),
                     columnSpacing = 96,
                 )

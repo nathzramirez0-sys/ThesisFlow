@@ -6,6 +6,7 @@ import com.nathzramirez.thesisflow.domain.model.AuthState
 import com.nathzramirez.thesisflow.domain.model.User
 import com.nathzramirez.thesisflow.domain.repository.AuthRepository
 import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
+import com.nathzramirez.thesisflow.domain.repository.NetworkMonitor
 import com.nathzramirez.thesisflow.domain.repository.UserRepository
 import com.nathzramirez.thesisflow.domain.result.AppResult
 import com.nathzramirez.thesisflow.domain.result.DomainError
@@ -14,6 +15,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -35,7 +37,9 @@ class MainViewModelTest {
         every { observeCurrentUser() } returns currentUser
     }
 
-    private fun viewModel() = MainViewModel(authRepository, userRepository, mockk<ChapterRepository>(), SavedStateHandle())
+    private val network = mockk<NetworkMonitor> { every { isOnline } returns flowOf(true) }
+
+    private fun viewModel() = MainViewModel(authRepository, userRepository, mockk<ChapterRepository>(), network, SavedStateHandle())
 
     private fun user(onboarded: Boolean) = User(
         uid = "ana",

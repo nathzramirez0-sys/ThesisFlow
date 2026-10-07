@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
+import com.nathzramirez.thesisflow.domain.model.PersonName
 
 @Composable
 fun FullScreenLoading(modifier: Modifier = Modifier, message: String? = null) {
@@ -130,6 +131,4 @@ fun Avatar(name: String, photoUrl: String?, modifier: Modifier = Modifier, size:
     }
 }
 
-internal fun initialsOf(name: String): String =
-    name.split(' ').filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }
-        .ifEmpty { "?" }
+internal fun initialsOf(name: String): String = PersonName.initials(name)

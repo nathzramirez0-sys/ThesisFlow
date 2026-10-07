@@ -68,6 +68,7 @@ import com.nathzramirez.thesisflow.designsystem.component.HudLabel
 import com.nathzramirez.thesisflow.designsystem.component.SectionHeader
 import com.nathzramirez.thesisflow.designsystem.component.SegmentedControl
 import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
+import com.nathzramirez.thesisflow.domain.model.PersonName
 import com.nathzramirez.thesisflow.domain.model.Task
 import com.nathzramirez.thesisflow.domain.model.TaskComment
 import com.nathzramirez.thesisflow.domain.model.TaskStatus
@@ -314,7 +315,7 @@ private fun InfoCard(task: Task, now: Instant, state: TaskDetailUiState, onOpenC
             AssigneeStack(assignees)
             if (assignees.isNotEmpty()) {
                 Text(
-                    assignees.joinToString { it.displayName.substringBefore(' ') },
+                    assignees.joinToString { PersonName.firstName(it.displayName) },
                     style = MaterialTheme.typography.labelLarge,
                 )
             }

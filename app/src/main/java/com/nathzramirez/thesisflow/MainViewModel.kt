@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.nathzramirez.thesisflow.domain.model.AuthState
 import com.nathzramirez.thesisflow.domain.repository.AuthRepository
 import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
+import com.nathzramirez.thesisflow.domain.repository.NetworkMonitor
 import com.nathzramirez.thesisflow.domain.repository.UserRepository
 import com.nathzramirez.thesisflow.domain.result.onFailure
 import com.nathzramirez.thesisflow.notifications.NotificationLink
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onEach
@@ -40,8 +42,14 @@ class MainViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val chapterRepository: ChapterRepository,
+    networkMonitor: NetworkMonitor,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
+
+    /** Drives the "offline" strip. Starts as online, so a cold start never flashes it. */
+    val isOffline: StateFlow<Boolean> = networkMonitor.isOnline
+        .map { !it }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     private val profileLoadFailed = MutableStateFlow(false)
     private var profileLoad: Job? = null

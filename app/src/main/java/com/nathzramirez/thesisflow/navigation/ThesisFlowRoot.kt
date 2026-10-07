@@ -1,9 +1,29 @@
 package com.nathzramirez.thesisflow.navigation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -16,8 +36,10 @@ import com.nathzramirez.thesisflow.SessionState
 import com.nathzramirez.thesisflow.designsystem.component.AuroraBackground
 import com.nathzramirez.thesisflow.designsystem.component.FullScreenLoading
 import com.nathzramirez.thesisflow.designsystem.component.GhostButton
+import com.nathzramirez.thesisflow.designsystem.component.GlowDot
 import com.nathzramirez.thesisflow.designsystem.component.GradientButton
 import com.nathzramirez.thesisflow.designsystem.component.MessageScreen
+import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
 import com.nathzramirez.thesisflow.feature.activity.ActivityFeedScreen
 import com.nathzramirez.thesisflow.feature.activity.ActivityLink
 import com.nathzramirez.thesisflow.feature.auth.LoginScreen
@@ -48,6 +70,7 @@ fun ThesisFlowRoot(viewModel: MainViewModel) {
     val session by viewModel.session.collectAsStateWithLifecycle()
     val pendingInvite by viewModel.pendingInviteCode.collectAsStateWithLifecycle()
     val pendingNotification by viewModel.pendingNotificationLink.collectAsStateWithLifecycle()
+    val isOffline by viewModel.isOffline.collectAsStateWithLifecycle()
 
     AuroraBackground {
         when (session) {
@@ -61,13 +84,15 @@ fun ThesisFlowRoot(viewModel: MainViewModel) {
                 GradientButton(text = stringResource(R.string.action_retry), onClick = viewModel::retryProfile)
                 GhostButton(text = stringResource(R.string.action_sign_out), onClick = viewModel::signOut)
             }
-            SessionState.Ready -> MainNavHost(
-                pendingInviteCode = pendingInvite,
-                onInviteHandled = viewModel::onInviteHandled,
-                pendingNotification = pendingNotification,
-                chapterNumber = viewModel::chapterNumber,
-                onNotificationHandled = viewModel::onNotificationHandled,
-            )
+            SessionState.Ready -> OfflineAware(isOffline) {
+                MainNavHost(
+                    pendingInviteCode = pendingInvite,
+                    onInviteHandled = viewModel::onInviteHandled,
+                    pendingNotification = pendingNotification,
+                    chapterNumber = viewModel::chapterNumber,
+                    onNotificationHandled = viewModel::onNotificationHandled,
+                )
+            }
         }
     }
 }
@@ -240,4 +265,39 @@ private fun MainNavHost(
 private fun NavController.openActivityLink(groupId: String, link: ActivityLink) = when (link) {
     is ActivityLink.ToChapter -> navigate(ChapterDetailRoute(groupId, link.chapterId, link.number))
     is ActivityLink.ToTask -> navigate(TaskDetailRoute(groupId, link.taskId))
+}
+
+/**
+ * Puts a slim "offline" strip above the app while there's no network. The strip
+ * takes the status bar's space, so the screens below don't pad for it twice.
+ */
+@Composable
+private fun OfflineAware(isOffline: Boolean, content: @Composable () -> Unit) {
+    Column(Modifier.fillMaxSize()) {
+        AnimatedVisibility(visible = isOffline, enter = expandVertically(), exit = shrinkVertically()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                GlowDot(AuroraTheme.colors.statusReview, size = 8.dp)
+                Text(
+                    stringResource(R.string.offline_banner),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+        Box(
+            Modifier
+                .weight(1f)
+                .then(if (isOffline) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier),
+        ) {
+            content()
+        }
+    }
 }

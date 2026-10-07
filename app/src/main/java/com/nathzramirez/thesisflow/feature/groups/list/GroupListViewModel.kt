@@ -3,6 +3,7 @@ package com.nathzramirez.thesisflow.feature.groups.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nathzramirez.thesisflow.domain.model.Group
+import com.nathzramirez.thesisflow.domain.model.PersonName
 import com.nathzramirez.thesisflow.domain.model.ThesisProgress
 import com.nathzramirez.thesisflow.domain.repository.ChapterRepository
 import com.nathzramirez.thesisflow.domain.repository.GroupRepository
@@ -36,7 +37,7 @@ class GroupListViewModel @Inject constructor(
     ) { groups, chapters, user ->
         val chaptersByGroup = chapters.groupBy { it.groupId }
         GroupListUiState.Loaded(
-            firstName = user?.displayName?.substringBefore(' ').orEmpty(),
+            firstName = user?.displayName?.let(PersonName::firstName).orEmpty(),
             groups = groups.map { GroupSummary(it, ThesisProgress.of(chaptersByGroup[it.id].orEmpty())) },
         )
     }

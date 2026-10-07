@@ -141,13 +141,15 @@ class ChapterFeedbackViewModel @AssistedInject constructor(
     val uiState: StateFlow<ChapterFeedbackUiState> = combine(data, local) { data, local ->
         val open = data.feedback.filter { !it.resolved }
         val resolved = data.feedback.filter { it.resolved }
-        val shown = if (local.filter == FeedbackFilter.OPEN) open else resolved
+        // An empty Resolved tab (its last item reopened, maybe by someone else) falls back to Open.
+        val filter = if (local.filter == FeedbackFilter.RESOLVED && resolved.isEmpty()) FeedbackFilter.OPEN else local.filter
+        val shown = if (filter == FeedbackFilter.OPEN) open else resolved
         val uploadsByFeedback = data.uploads.groupBy { it.feedbackId }
         ChapterFeedbackUiState(
             items = shown.map { feedback -> feedback.toItem(data, uploadsByFeedback[feedback.id].orEmpty()) },
             openCount = open.size,
             resolvedCount = resolved.size,
-            filter = local.filter,
+            filter = filter,
             canGiveFeedback = data.role?.let(FeedbackRules::canGiveFeedback) == true,
             versions = data.chapter?.latestVersion?.let { latest -> (latest downTo 1).toList() }.orEmpty(),
             canRequestRevisions = data.chapter != null && data.chapter.status != ChapterStatus.REVISIONS,
@@ -238,8 +240,10 @@ class ChapterFeedbackViewModel @AssistedInject constructor(
         }
     }
 
-    fun setResolved(feedbackId: String, resolved: Boolean) = launchReportingErrors {
-        setResolved(route.groupId, feedbackId, resolved)
+    fun setResolved(feedbackId: String, resolved: Boolean) {
+        // Reopening the last resolved item: follow it to the Open tab, and stay there later.
+        if (!resolved && uiState.value.resolvedCount <= 1) local.update { it.copy(filter = FeedbackFilter.OPEN) }
+        launchReportingErrors { setResolved(route.groupId, feedbackId, resolved) }
     }
 
     fun askDelete(feedback: Feedback) = local.update { it.copy(confirmDelete = feedback) }

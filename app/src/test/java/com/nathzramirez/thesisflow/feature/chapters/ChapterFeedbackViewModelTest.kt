@@ -27,6 +27,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -104,6 +105,23 @@ class ChapterFeedbackViewModelTest {
             val item = expectMostRecentItem().items.single()
             assertEquals("fb-2", item.feedback.id)
             assertTrue(item.canReopen)
+        }
+    }
+
+    @Test
+    fun `an emptied resolved tab falls back to open`() = runTest {
+        val items = MutableStateFlow(listOf(feedback("fb-1", resolved = false), feedback("fb-2", resolved = true)))
+        every { feedbackRepo.observeFeedback("ch-1") } returns items
+        val viewModel = viewModel(uid = "dr", role = Role.ADVISER)
+        viewModel.uiState.test {
+            viewModel.setFilter(FeedbackFilter.RESOLVED)
+            assertEquals(FeedbackFilter.RESOLVED, expectMostRecentItem().filter)
+
+            // Someone reopens the only resolved item.
+            items.value = listOf(feedback("fb-1", resolved = false), feedback("fb-2", resolved = false))
+            val state = expectMostRecentItem()
+            assertEquals(FeedbackFilter.OPEN, state.filter)
+            assertEquals(listOf("fb-1", "fb-2"), state.items.map { it.feedback.id })
         }
     }
 

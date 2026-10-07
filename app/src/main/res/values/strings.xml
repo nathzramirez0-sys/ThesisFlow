@@ -487,6 +487,8 @@
     <string name="stats_breakdown_title">Where things stand</string>
     <string name="stats_note">These count what\'s recorded in ThesisFlow: tasks marked done, drafts uploaded and feedback resolved. They don\'t measure effort, so use them to spot who needs a hand, not to rank anyone.</string>
 
+    <string name="offline_banner">You\'re offline. Changes are saved and will sync when you\'re back.</string>
+
     <!-- Validation -->
     <string name="validation_required_email">Enter your email</string>
     <string name="validation_required_password">Enter your password</string>
