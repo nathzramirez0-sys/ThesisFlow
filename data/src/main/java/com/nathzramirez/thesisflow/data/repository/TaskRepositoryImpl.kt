@@ -54,6 +54,9 @@ internal class TaskRepositoryImpl @Inject constructor(
     override fun observeComments(taskId: String): Flow<List<TaskComment>> =
         commentDao.observeForTask(taskId).map { comments -> comments.map { it.toDomain() } }
 
+    override fun observeGroupComments(groupId: String): Flow<List<TaskComment>> =
+        commentDao.observeForGroup(groupId).map { comments -> comments.map { it.toDomain() } }
+
     override suspend fun createTask(groupId: String, draft: TaskDraft): AppResult<String> = safeCall {
         val uid = auth.requireUid()
         val task = tasks(groupId).document()

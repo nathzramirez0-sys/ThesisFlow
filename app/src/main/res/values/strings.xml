@@ -439,6 +439,54 @@
     <string name="activity_defense_proposal">%1$s scheduled the proposal defense</string>
     <string name="activity_defense_final">%1$s scheduled the final defense</string>
 
+    <!-- Team stats -->
+    <string name="stats_title">Team stats</string>
+    <string name="stats_open">Open team stats</string>
+    <string name="stats_card_body">Who did what, work per week, and how fast feedback gets resolved</string>
+    <string name="stats_kpi_chapters">Chapters approved</string>
+    <string name="stats_kpi_tasks">Tasks done</string>
+    <string name="stats_kpi_feedback">Open feedback</string>
+    <string name="stats_kpi_resolution">Feedback fixed in</string>
+    <string name="stats_of">%1$d/%2$d</string>
+    <string name="stats_none_yet">None yet</string>
+    <plurals name="stats_resolved_count">
+        <item quantity="one">%d resolved</item>
+        <item quantity="other">%d resolved</item>
+    </plurals>
+    <plurals name="stats_open_count">
+        <item quantity="one">%d open</item>
+        <item quantity="other">%d open</item>
+    </plurals>
+    <plurals name="stats_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="stats_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <string name="stats_weekly_title">Work finished per week</string>
+    <string name="stats_weekly_empty">Nothing finished in the last 8 weeks yet. Done tasks, uploaded drafts and resolved feedback show up here.</string>
+    <string name="stats_weekly_description">Work finished per week over the last 8 weeks; %1$d this week</string>
+    <string name="stats_series_tasks">Tasks done</string>
+    <string name="stats_series_drafts">Drafts uploaded</string>
+    <string name="stats_series_feedback">Feedback resolved</string>
+    <string name="stats_contributions_title">Who did what</string>
+    <plurals name="stats_tasks">
+        <item quantity="one">%d task</item>
+        <item quantity="other">%d tasks</item>
+    </plurals>
+    <plurals name="stats_drafts">
+        <item quantity="one">%d draft</item>
+        <item quantity="other">%d drafts</item>
+    </plurals>
+    <plurals name="stats_comments">
+        <item quantity="one">%d comment</item>
+        <item quantity="other">%d comments</item>
+    </plurals>
+    <string name="stats_breakdown_title">Where things stand</string>
+    <string name="stats_note">These count what\'s recorded in ThesisFlow: tasks marked done, drafts uploaded and feedback resolved. They don\'t measure effort, so use them to spot who needs a hand, not to rank anyone.</string>
+
     <!-- Validation -->
     <string name="validation_required_email">Enter your email</string>
     <string name="validation_required_password">Enter your password</string>

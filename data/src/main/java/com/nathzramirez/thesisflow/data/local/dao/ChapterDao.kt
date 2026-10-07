@@ -44,6 +44,11 @@ interface ChapterVersionDao {
     @Query("SELECT * FROM chapter_versions WHERE chapterId = :chapterId ORDER BY versionNumber DESC")
     fun observeForChapter(chapterId: String): Flow<List<VersionWithDetails>>
 
+    /** Every chapter's drafts, oldest first, for the group dashboard. */
+    @Transaction
+    @Query("SELECT * FROM chapter_versions WHERE groupId = :groupId ORDER BY uploadedAt")
+    fun observeForGroup(groupId: String): Flow<List<VersionWithDetails>>
+
     @Upsert
     suspend fun upsertAll(versions: List<ChapterVersionEntity>)
 

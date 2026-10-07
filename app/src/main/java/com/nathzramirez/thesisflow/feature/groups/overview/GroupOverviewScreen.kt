@@ -99,6 +99,7 @@ fun GroupOverviewScreen(
     onOpenChapters: () -> Unit,
     onOpenTasks: () -> Unit,
     onOpenActivity: () -> Unit,
+    onOpenStats: () -> Unit,
     onOpenActivityLink: (ActivityLink) -> Unit,
     viewModel: GroupOverviewViewModel = hiltViewModel<GroupOverviewViewModel, GroupOverviewViewModel.Factory> {
         it.create(route)
@@ -183,6 +184,7 @@ fun GroupOverviewScreen(
             }
             item { ChaptersCard(progress = state.progress, openFeedback = state.openFeedback, onClick = onOpenChapters) }
             item { TasksCard(summary = state.tasks, onClick = onOpenTasks) }
+            item { StatsCard(onClick = onOpenStats) }
             item {
                 RecentActivityCard(
                     entries = state.recentActivity,
@@ -359,6 +361,29 @@ private fun RecentActivityCard(entries: List<ActivityEntry>, onOpen: (ActivityLi
                 }
                 ActivityRow(entry = entry, now = now, onOpen = onOpen)
             }
+        }
+    }
+}
+
+/** The way into the team dashboard. */
+@Composable
+private fun StatsCard(onClick: () -> Unit) {
+    val aurora = AuroraTheme.colors
+    GlassCard(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                HudLabel(stringResource(R.string.stats_title))
+                Text(
+                    stringResource(R.string.stats_card_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = stringResource(R.string.stats_open),
+                tint = aurora.gradientEnd,
+            )
         }
     }
 }

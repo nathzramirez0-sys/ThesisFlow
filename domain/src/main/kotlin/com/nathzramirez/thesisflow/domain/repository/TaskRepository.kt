@@ -16,6 +16,9 @@ interface TaskRepository {
     /** Oldest first, like a chat. */
     fun observeComments(taskId: String): Flow<List<TaskComment>>
 
+    /** Every comment on every task in the group, for the dashboard. */
+    fun observeGroupComments(groupId: String): Flow<List<TaskComment>>
+
     /** Returns the new task's id. */
     suspend fun createTask(groupId: String, draft: TaskDraft): AppResult<String>
 

@@ -21,6 +21,10 @@ interface FeedbackDao {
     @Query("SELECT * FROM feedback WHERE id = :feedbackId")
     fun observe(feedbackId: String): Flow<FeedbackWithDetails?>
 
+    @Transaction
+    @Query("SELECT * FROM feedback WHERE groupId = :groupId ORDER BY createdAt")
+    fun observeForGroup(groupId: String): Flow<List<FeedbackWithDetails>>
+
     /** Counted in SQL from the synced rows, so there is no stored counter to drift. */
     @Query(
         """

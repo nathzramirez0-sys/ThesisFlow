@@ -53,6 +53,9 @@ internal class ChapterRepositoryImpl @Inject constructor(
     override fun observeVersions(chapterId: String): Flow<List<ChapterVersion>> =
         versionDao.observeForChapter(chapterId).map { versions -> versions.map { it.toDomain() } }
 
+    override fun observeGroupVersions(groupId: String): Flow<List<ChapterVersion>> =
+        versionDao.observeForGroup(groupId).map { versions -> versions.map { it.toDomain() } }
+
     override suspend fun addChapter(groupId: String, title: String): AppResult<String> = safeCall {
         val uid = auth.requireUid()
         val order = (chapterDao.maxOrder(groupId) ?: 0) + 1

@@ -69,6 +69,9 @@ interface TaskCommentDao {
     @Query("SELECT * FROM task_comments WHERE taskId = :taskId ORDER BY createdAt")
     fun observeForTask(taskId: String): Flow<List<TaskCommentEntity>>
 
+    @Query("SELECT * FROM task_comments WHERE groupId = :groupId ORDER BY createdAt")
+    fun observeForGroup(groupId: String): Flow<List<TaskCommentEntity>>
+
     @Upsert
     suspend fun upsertAll(comments: List<TaskCommentEntity>)
 

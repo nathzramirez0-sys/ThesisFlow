@@ -51,6 +51,9 @@ internal class FeedbackRepositoryImpl @Inject constructor(
     override fun observeFeedbackById(feedbackId: String): Flow<Feedback?> =
         feedbackDao.observe(feedbackId).map { it?.toDomain() }
 
+    override fun observeGroupFeedback(groupId: String): Flow<List<Feedback>> =
+        feedbackDao.observeForGroup(groupId).map { items -> items.map { it.toDomain() } }
+
     override fun observeOpenCounts(groupId: String): Flow<Map<String, Int>> =
         feedbackDao.observeOpenCounts(groupId).map { rows -> rows.associate { it.chapterId to it.openCount } }
 

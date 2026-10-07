@@ -97,6 +97,7 @@ dependencies {
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.vico.compose)
 
     // The push service and notification handling live in the app; the token bookkeeping is in :data.
     implementation(platform(libs.firebase.bom))

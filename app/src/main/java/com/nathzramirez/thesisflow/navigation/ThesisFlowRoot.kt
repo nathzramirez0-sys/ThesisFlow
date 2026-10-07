@@ -29,6 +29,7 @@ import com.nathzramirez.thesisflow.feature.groups.list.GroupListScreen
 import com.nathzramirez.thesisflow.feature.groups.overview.GroupOverviewScreen
 import com.nathzramirez.thesisflow.feature.profile.OnboardingScreen
 import com.nathzramirez.thesisflow.feature.profile.ProfileScreen
+import com.nathzramirez.thesisflow.feature.stats.GroupStatsScreen
 import com.nathzramirez.thesisflow.feature.tasks.board.TaskBoardScreen
 import com.nathzramirez.thesisflow.feature.tasks.detail.TaskDetailScreen
 import com.nathzramirez.thesisflow.feature.tasks.editor.TaskEditorScreen
@@ -162,8 +163,12 @@ private fun MainNavHost(
                 onOpenChapters = { navController.navigate(ChapterListRoute(route.groupId)) },
                 onOpenTasks = { navController.navigate(TaskBoardRoute(route.groupId)) },
                 onOpenActivity = { navController.navigate(ActivityFeedRoute(route.groupId)) },
+                onOpenStats = { navController.navigate(GroupStatsRoute(route.groupId)) },
                 onOpenActivityLink = { link -> navController.openActivityLink(route.groupId, link) },
             )
+        }
+        composable<GroupStatsRoute> { entry ->
+            GroupStatsScreen(route = entry.toRoute<GroupStatsRoute>(), onBack = { navController.popBackStack() })
         }
         composable<ActivityFeedRoute> { entry ->
             val route = entry.toRoute<ActivityFeedRoute>()

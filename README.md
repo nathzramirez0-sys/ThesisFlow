@@ -2,13 +2,14 @@
 
 A thesis and group-project manager for college students in the Philippines. Groups track who is doing what, which chapters are done, what the adviser said, and what is due next.
 
-> **Status:** in development. Phases 1–5 of 7 are done: accounts and groups, the chapter tracker with
-> versioned drafts, tasks with a list and kanban board, adviser feedback with a group activity feed, and
-> push notifications, daily deadline reminders and a defense countdown. All of it works offline.
+> **Status:** in development. Phases 1–6 of 7 are done: accounts and groups, the chapter tracker with
+> versioned drafts, tasks with a list and kanban board, adviser feedback with a group activity feed,
+> push notifications, daily deadline reminders and a defense countdown, and a team stats dashboard with
+> charts. All of it works offline.
 
 ## Stack
 
-Kotlin · Jetpack Compose (Material 3) · MVVM + Clean Architecture · Hilt · Coroutines & Flow · Navigation Compose · Room · DataStore · WorkManager · Firebase Auth, Firestore, Cloud Storage, Cloud Functions and Cloud Messaging · Credential Manager (Google sign-in) · JUnit, MockK, Turbine
+Kotlin · Jetpack Compose (Material 3) · MVVM + Clean Architecture · Hilt · Coroutines & Flow · Navigation Compose · Room · DataStore · WorkManager · Firebase Auth, Firestore, Cloud Storage, Cloud Functions and Cloud Messaging · Credential Manager (Google sign-in) · Vico charts · JUnit, MockK, Turbine
 
 ## Project layout
 

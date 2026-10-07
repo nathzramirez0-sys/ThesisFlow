@@ -22,6 +22,7 @@ firebaseBom = "34.19.0"
 credentials = "1.6.0"
 googleId = "1.2.1"
 coil = "3.6.3"
+vico = "3.3.1"
 javaxInject = "1"
 
 junit = "4.13.2"
@@ -77,6 +78,7 @@ googleid = { module = "com.google.android.libraries.identity.googleid:googleid",
 
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
+vico-compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "vico" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }

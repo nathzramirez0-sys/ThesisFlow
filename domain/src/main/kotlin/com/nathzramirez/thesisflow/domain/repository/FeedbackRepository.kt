@@ -11,6 +11,9 @@ interface FeedbackRepository {
 
     fun observeFeedbackById(feedbackId: String): Flow<Feedback?>
 
+    /** All feedback in the group, open and resolved, for the dashboard. */
+    fun observeGroupFeedback(groupId: String): Flow<List<Feedback>>
+
     /** Open feedback per chapter id, counted locally; chapters without any are left out. */
     fun observeOpenCounts(groupId: String): Flow<Map<String, Int>>
 

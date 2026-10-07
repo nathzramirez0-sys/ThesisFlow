@@ -49,4 +49,7 @@ data class TaskEditorRoute(val groupId: String, val taskId: String? = null)
 data class ActivityFeedRoute(val groupId: String)
 
 @Serializable
+data class GroupStatsRoute(val groupId: String)
+
+@Serializable
 data object ProfileRoute

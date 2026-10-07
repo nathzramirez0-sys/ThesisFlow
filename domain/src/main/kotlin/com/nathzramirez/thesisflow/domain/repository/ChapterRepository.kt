@@ -19,6 +19,9 @@ interface ChapterRepository {
     /** Newest version first. */
     fun observeVersions(chapterId: String): Flow<List<ChapterVersion>>
 
+    /** Every draft of every chapter in the group, for the dashboard. */
+    fun observeGroupVersions(groupId: String): Flow<List<ChapterVersion>>
+
     /** Appends a chapter after the existing ones and returns its id. */
     suspend fun addChapter(groupId: String, title: String): AppResult<String>
 
