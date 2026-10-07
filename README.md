@@ -149,7 +149,7 @@ CI runs the unit tests, a debug build, the rules tests and the Cloud Functions b
 
 The debug build can talk to the Firebase Local Emulator Suite using a demo config with placeholder values. You need Android Studio, Node 22+ and Java 21+.
 
-1. Copy the demo config into place:
+1. Copy the demo config into place. If you've set up a real project, keep its `google-services.json` somewhere else first, because the emulators need the demo one:
 
    ```bash
    cp app/google-services.emulator.json app/google-services.json
@@ -175,21 +175,50 @@ Email sign-up works against the emulators. Google sign-in and push notifications
 
 ## Use a real Firebase project
 
-1. Create a project on the **Blaze** plan (Cloud Storage needs it) and put Firestore in `asia-southeast1`.
-2. Add an Android app with the package `com.nathzramirez.thesisflow` and your debug SHA-1 (`./gradlew signingReport`). Enable **Email/Password** and **Google** sign-in, then download `google-services.json` into `app/`.
-3. Point the CLI at the project and deploy:
+Cloud Functions and Cloud Storage only run on the **Blaze** plan, and invites, uploads, the activity feed and push notifications depend on them. On the free Spark plan, only the parts without those services work. A demo stays inside Blaze's free allowance, but set a budget alert anyway.
+
+1. In the Firebase console, create a project, upgrade it to Blaze, then set up:
+   - **Firestore:** Standard edition in `asia-southeast1`. The functions run there, and Firestore triggers must be in the same region as the database.
+   - **Storage:** `us-central1`. Storage's free allowance only applies to `us-central1`, `us-east1` and `us-west1`.
+   - **Authentication:** enable **Email/Password** and **Google**.
+
+2. Sign in to the Firebase CLI:
 
    ```bash
-   npx firebase-tools use --add
+   npx firebase-tools login
+   ```
+
+   - On Windows PowerShell, type `npx.cmd` instead of `npx`; the default script policy blocks `npx.ps1`.
+   - If the CLI is already signed in with another Google account, run `login:add` instead, then `login:use <email>` in this folder so it uses the new account here only.
+
+3. Register the Android app (package `com.nathzramirez.thesisflow`) with your debug key's SHA-1 and SHA-256, then save its config as `app/google-services.json`. You can do this in the console (Project settings → Add app), or with the CLI's `apps:create`, `apps:android:sha:create` and `apps:sdkconfig`. To get the fingerprints:
+
+   ```bash
+   ./gradlew signingReport
+   ```
+
+   Enable Google sign-in **before** downloading the config. Otherwise the file has no web client ID, and the build can't find `default_web_client_id`.
+
+4. Put your project ID under `prod` in `.firebaserc`. The `default` alias stays `demo-thesisflow`, so the emulators and the rules tests can never reach a real project. Then deploy:
+
+   ```bash
+   npm --prefix functions install
    ```
 
    ```bash
-   npx firebase-tools deploy --only firestore,storage,functions,hosting
+   npx firebase-tools deploy --only firestore,storage,functions,hosting --project prod
    ```
 
-   The Firestore deploy also turns on the TTL policy (in `firestore.indexes.json`) that deletes activity entries after 180 days.
+   What to expect:
+   - **Functions:** the first deploy takes several minutes while it enables Cloud Build, Artifact Registry, Eventarc and Cloud Run. Answer yes to the artifact cleanup policy.
+   - **Storage:** the deploy asks to grant Storage an IAM role for cross-service rules, because `storage.rules` reads group membership from Firestore. Answer yes.
+   - **Firestore:** the deploy also turns on the TTL policy that deletes activity entries after 180 days. TTL needs billing, so on Spark it stops with "billing disabled". There, deploy `firestore:rules` alone, plus the three `groupId` overrides from `firestore.indexes.json` without the TTL entry.
 
-4. For invite links, set `thesisflow.inviteHost` in `gradle.properties` to your `<project-id>.web.app` domain, and put your signing certificate's SHA-256 in `hosting/public/.well-known/assetlinks.json`.
+5. Set `thesisflow.inviteHost` in `gradle.properties` to `<project-id>.web.app`, put your signing certificate's SHA-256 in `hosting/public/.well-known/assetlinks.json`, and redeploy hosting so invite links open the app. Without the emulator flag, the build talks to the real project:
+
+   ```bash
+   ./gradlew :app:installDebug
+   ```
 
 ## Credits
 

@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "demo-thesisflow"
+    "default": "demo-thesisflow",
+    "prod": "thesisflow-63504"
   }
 }
