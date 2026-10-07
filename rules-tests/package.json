@@ -1,0 +1,17 @@
+{
+  "name": "thesisflow-rules-tests",
+  "private": true,
+  "description": "Security-rule tests for firestore.rules and storage.rules, run against the Firebase emulators.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "npx -y firebase-tools@15.31.0 emulators:exec --config ../firebase.json --project demo-thesisflow --only firestore,storage \"node --test\"",
+    "test:running": "node --test"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.19.0"
+  }
+}
