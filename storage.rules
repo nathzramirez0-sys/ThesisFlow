@@ -34,12 +34,16 @@ service firebase.storage {
 
     match /groups/{groupId}/files/{fileId}/{fileName} {
       allow read: if isMember(groupId);
-      allow create: if isMember(groupId) && validUpload(groupId);
-      // A retried upload rewrites its own object; nobody can replace someone else's.
-      allow update: if isMember(groupId) && validUpload(groupId)
-        && resource.metadata.uploadedBy == request.auth.uid;
-      // Leaders may tidy up task attachments, but never an adviser's feedback files.
+      // A retried upload rewrites its own object; nobody can replace someone
+      // else's. The check covers create too: the Storage emulator evaluates
+      // every upload as a create, even over an existing object.
+      allow create, update: if isMember(groupId) && validUpload(groupId)
+        && (resource == null || resource.metadata.uploadedBy == request.auth.uid);
+      // Drafts are version history, as in firestore.rules: only the Admin SDK
+      // removes them, with their chapter. Leaders may tidy up task attachments,
+      // but never an adviser's feedback files.
       allow delete: if isMember(groupId)
+        && resource.metadata.kind != 'draft'
         && (resource.metadata.uploadedBy == request.auth.uid
           || (roleIn(groupId) == 'leader' && resource.metadata.kind == 'attachment'));
     }

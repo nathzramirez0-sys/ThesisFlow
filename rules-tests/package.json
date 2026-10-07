@@ -7,8 +7,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "npx -y firebase-tools@15.31.0 emulators:exec --config ../firebase.json --project demo-thesisflow --only firestore,storage \"node --test\"",
-    "test:running": "node --test"
+    "test": "npx -y firebase-tools@15.31.0 emulators:exec --config ../firebase.json --project demo-thesisflow --only firestore,storage \"node --test --test-concurrency=1\"",
+    "test:running": "node --test --test-concurrency=1"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",

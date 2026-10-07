@@ -1,8 +1,14 @@
 // Shared test fixtures: one group with a leader, a member and an adviser, plus an
 // outsider, seeded with security rules off so each test starts from a known state.
+// Every test file reseeds the same emulator, so the files run one at a time
+// (--test-concurrency=1 in package.json).
 import { readFileSync } from "node:fs";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
-import { Timestamp, doc, setDoc } from "firebase/firestore";
+import { Timestamp, doc, setDoc, setLogLevel } from "firebase/firestore";
+
+// Denied writes are the point of half these tests; assertFails checks them, so
+// the SDK needn't log each one.
+setLogLevel("silent");
 
 export const GROUP = "group-1";
 export const LEADER = "cara";
@@ -26,6 +32,13 @@ export async function testEnv() {
 export const firestoreAs = (uid) => env.authenticatedContext(uid, { email: `${uid}@test.com` }).firestore();
 export const storageAs = (uid) => env.authenticatedContext(uid, { email: `${uid}@test.com` }).storage();
 
+/** A files record for a draft of chapter ch1, as the upload worker writes it. */
+export const draftFile = (fileId, uploadedBy, uploadedAt = Timestamp.now()) => ({
+  name: "Chapter1.pdf", mimeType: "application/pdf", sizeBytes: 250_000,
+  storagePath: `groups/${GROUP}/files/${fileId}/Chapter1.pdf`, kind: "draft",
+  chapterId: "ch1", taskId: null, feedbackId: null, uploadedBy, uploadedAt,
+});
+
 export async function seed() {
   await env.clearFirestore();
   const now = Timestamp.now();
@@ -46,6 +59,13 @@ export async function seed() {
       title: "Introduction", order: 1, status: "for_review", deadline: null, latestVersion: 2,
       updatedAt: now, updatedBy: MEMBER,
     });
+    for (const version of [1, 2]) {
+      await set(`groups/${GROUP}/files/f${version}`, draftFile(`f${version}`, MEMBER));
+      await set(`groups/${GROUP}/chapters/ch1/versions/${version}`, {
+        groupId: GROUP, chapterId: "ch1", versionNumber: version, fileId: `f${version}`, note: "",
+        uploadedBy: MEMBER, uploadedAt: now,
+      });
+    }
     await set(`groups/${GROUP}/tasks/t1`, {
       groupId: GROUP, title: "Draft the survey", description: "", priority: "high", status: "todo", dueAt: null,
       chapterId: null, assigneeIds: [MEMBER], createdBy: LEADER, createdAt: now, updatedAt: now,
