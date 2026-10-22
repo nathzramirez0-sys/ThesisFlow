@@ -30,6 +30,22 @@ android {
         buildConfigField("String", "FUNCTIONS_REGION", "\"asia-southeast1\"")
     }
 
+    // "cloud" is the Firebase app; "local" keeps everything on the phone and needs
+    // no account or connection. Both install side by side. See data/build.gradle.kts.
+    flavorDimensions += "backend"
+    productFlavors {
+        create("cloud") {
+            dimension = "backend"
+            buildConfigField("boolean", "LOCAL_MODE", "false")
+        }
+        create("local") {
+            dimension = "backend"
+            applicationIdSuffix = ".local"
+            versionNameSuffix = "-local"
+            buildConfigField("boolean", "LOCAL_MODE", "true")
+        }
+    }
+
     buildTypes {
         debug {
             buildConfigField("boolean", "USE_EMULATORS", useEmulators)

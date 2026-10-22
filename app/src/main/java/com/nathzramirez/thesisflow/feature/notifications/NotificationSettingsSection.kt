@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nathzramirez.thesisflow.BuildConfig
 import com.nathzramirez.thesisflow.R
 import com.nathzramirez.thesisflow.designsystem.component.GhostButton
 import com.nathzramirez.thesisflow.designsystem.component.GlassCard
@@ -76,13 +77,16 @@ fun NotificationSettingsSection(
                 }
                 Divider()
             }
-            SwitchRow(
-                title = stringResource(R.string.notifications_push),
-                body = stringResource(R.string.notifications_push_body),
-                checked = current.pushEnabled,
-                onCheckedChange = viewModel::setPushEnabled,
-            )
-            Divider()
+            // Pushes come from the server, which the local build doesn't have. Reminders work in both.
+            if (!BuildConfig.LOCAL_MODE) {
+                SwitchRow(
+                    title = stringResource(R.string.notifications_push),
+                    body = stringResource(R.string.notifications_push_body),
+                    checked = current.pushEnabled,
+                    onCheckedChange = viewModel::setPushEnabled,
+                )
+                Divider()
+            }
             SwitchRow(
                 title = stringResource(R.string.notifications_reminders),
                 body = stringResource(R.string.notifications_reminders_body, timeFormatter.format(current.reminderTime)),

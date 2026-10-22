@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The local build keeps uploaded files in app storage (see LocalFileStore); only they are shareable. -->
+<paths>
+    <files-path
+        name="local_files"
+        path="local_files/" />
+</paths>

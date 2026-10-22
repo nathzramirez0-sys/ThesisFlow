@@ -96,6 +96,11 @@ internal object ActivityTypes {
     const val DEFENSE_SCHEDULED = "defense_scheduled"
 }
 
+internal fun DefenseKind.toWire(): String = when (this) {
+    DefenseKind.PROPOSAL -> "proposal"
+    DefenseKind.FINAL -> "final"
+}
+
 internal fun defenseKindFromWire(value: String?): DefenseKind? = when (value) {
     "proposal" -> DefenseKind.PROPOSAL
     "final" -> DefenseKind.FINAL

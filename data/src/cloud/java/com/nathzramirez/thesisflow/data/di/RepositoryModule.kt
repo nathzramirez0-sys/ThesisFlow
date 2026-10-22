@@ -10,6 +10,8 @@ import com.nathzramirez.thesisflow.data.repository.TaskRepositoryImpl
 import com.nathzramirez.thesisflow.data.repository.UserRepositoryImpl
 import com.nathzramirez.thesisflow.data.settings.ReminderLogImpl
 import com.nathzramirez.thesisflow.data.settings.SettingsRepositoryImpl
+import com.nathzramirez.thesisflow.data.sync.BackgroundServices
+import com.nathzramirez.thesisflow.data.sync.CloudBackgroundServices
 import com.nathzramirez.thesisflow.data.sync.ConnectivityNetworkMonitor
 import com.nathzramirez.thesisflow.domain.repository.ActivityRepository
 import com.nathzramirez.thesisflow.domain.repository.AuthRepository
@@ -28,6 +30,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 
 /**
+ * The cloud build's bindings: Firestore and Storage behind every repository.
  * The implementations are `internal`, so the app module can only reach them
  * through the domain interfaces bound here.
  */
@@ -67,4 +70,7 @@ internal abstract class RepositoryModule {
 
     @Binds
     abstract fun bindNetworkMonitor(impl: ConnectivityNetworkMonitor): NetworkMonitor
+
+    @Binds
+    abstract fun bindBackgroundServices(impl: CloudBackgroundServices): BackgroundServices
 }

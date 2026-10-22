@@ -1,9 +1,5 @@
 package com.nathzramirez.thesisflow.data.repository
 
-import android.content.Context
-import android.net.Uri
-import android.provider.OpenableColumns
-import android.webkit.MimeTypeMap
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -19,6 +15,7 @@ import com.nathzramirez.thesisflow.data.remote.FirestoreSchema.Storage
 import com.nathzramirez.thesisflow.data.remote.requireUid
 import com.nathzramirez.thesisflow.data.remote.safeCall
 import com.nathzramirez.thesisflow.data.upload.LocalFiles
+import com.nathzramirez.thesisflow.data.upload.PickedFiles
 import com.nathzramirez.thesisflow.data.upload.UploadScheduler
 import com.nathzramirez.thesisflow.domain.model.FileAttachment
 import com.nathzramirez.thesisflow.domain.model.LocalFileInfo
@@ -27,21 +24,18 @@ import com.nathzramirez.thesisflow.domain.model.UploadTarget
 import com.nathzramirez.thesisflow.domain.model.UploadState
 import com.nathzramirez.thesisflow.domain.repository.FileRepository
 import com.nathzramirez.thesisflow.domain.result.AppResult
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.IOException
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 internal class FileRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val auth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
@@ -49,36 +43,12 @@ internal class FileRepositoryImpl @Inject constructor(
     private val pendingUploads: PendingUploadDao,
     private val fileDao: FileDao,
     private val localFiles: LocalFiles,
+    private val pickedFiles: PickedFiles,
     private val scheduler: UploadScheduler,
 ) : FileRepository {
 
     override suspend fun inspect(sourceUri: String): AppResult<LocalFileInfo> = safeCall {
-        withContext(ioDispatcher) {
-            val uri = Uri.parse(sourceUri)
-            val resolver = context.contentResolver
-            var name: String? = null
-            var size = -1L
-            try {
-                resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)
-                    ?.use { cursor ->
-                        if (cursor.moveToFirst()) {
-                            name = cursor.getString(0)
-                            if (!cursor.isNull(1)) size = cursor.getLong(1)
-                        }
-                    }
-                // Some providers don't report a size; ask the file itself.
-                if (size < 0) size = resolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: -1
-            } catch (e: IOException) {
-                throw FileUnreadableException(e)
-            } catch (e: SecurityException) {
-                throw FileUnreadableException(e)
-            }
-            val fileName = LocalFiles.sanitizeName(name ?: uri.lastPathSegment ?: "file")
-            val mimeType = resolver.getType(uri)
-                ?: MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileName.substringAfterLast('.', "").lowercase())
-                ?: "application/octet-stream"
-            LocalFileInfo(name = fileName, mimeType = mimeType, sizeBytes = size)
-        }
+        withContext(ioDispatcher) { pickedFiles.inspect(sourceUri) }
     }
 
     override suspend fun queueUpload(
@@ -167,15 +137,10 @@ internal class FileRepositoryImpl @Inject constructor(
             val dir = localFiles.pendingDir(fileId).apply { mkdirs() }
             val target = File(dir, name)
             try {
-                val input = context.contentResolver.openInputStream(Uri.parse(sourceUri))
-                    ?: throw IOException("Could not open $sourceUri")
-                input.use { source -> target.outputStream().use { source.copyTo(it) } }
-            } catch (e: IOException) {
+                pickedFiles.copy(sourceUri, target)
+            } catch (e: FileUnreadableException) {
                 dir.deleteRecursively()
-                throw FileUnreadableException(e)
-            } catch (e: SecurityException) {
-                dir.deleteRecursively()
-                throw FileUnreadableException(e)
+                throw e
             }
             target
         }

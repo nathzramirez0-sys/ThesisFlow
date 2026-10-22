@@ -16,6 +16,15 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Two builds of the app: "cloud" keeps the data in Firebase and shares it between
+    // phones; "local" keeps everything in Room on one phone. Each has its own bindings
+    // in src/cloud and src/local; everything else, Room included, is shared.
+    flavorDimensions += "backend"
+    productFlavors {
+        create("cloud") { dimension = "backend" }
+        create("local") { dimension = "backend" }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -61,7 +70,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
 
-    // Migration tests run on a device or emulator: ./gradlew :data:connectedDebugAndroidTest
+    // Migration tests run on a device or emulator: ./gradlew :data:connectedCloudDebugAndroidTest
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)

@@ -10,6 +10,7 @@ import com.nathzramirez.thesisflow.data.local.dao.ChapterVersionDao
 import com.nathzramirez.thesisflow.data.local.dao.FeedbackDao
 import com.nathzramirez.thesisflow.data.local.dao.FileDao
 import com.nathzramirez.thesisflow.data.local.dao.GroupDao
+import com.nathzramirez.thesisflow.data.local.dao.LocalModeDao
 import com.nathzramirez.thesisflow.data.local.dao.MemberDao
 import com.nathzramirez.thesisflow.data.local.dao.PendingUploadDao
 import com.nathzramirez.thesisflow.data.local.dao.SentReminderDao
@@ -75,4 +76,5 @@ abstract class ThesisFlowDatabase : RoomDatabase() {
     abstract fun feedbackDao(): FeedbackDao
     abstract fun activityDao(): ActivityDao
     abstract fun sentReminderDao(): SentReminderDao
+    abstract fun localModeDao(): LocalModeDao
 }

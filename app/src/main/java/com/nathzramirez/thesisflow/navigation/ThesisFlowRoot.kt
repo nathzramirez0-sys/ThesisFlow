@@ -42,10 +42,8 @@ import com.nathzramirez.thesisflow.designsystem.component.MessageScreen
 import com.nathzramirez.thesisflow.designsystem.theme.AuroraTheme
 import com.nathzramirez.thesisflow.feature.activity.ActivityFeedScreen
 import com.nathzramirez.thesisflow.feature.activity.ActivityLink
-import com.nathzramirez.thesisflow.feature.auth.LoginScreen
 import com.nathzramirez.thesisflow.feature.chapters.detail.ChapterDetailScreen
 import com.nathzramirez.thesisflow.feature.chapters.list.ChapterListScreen
-import com.nathzramirez.thesisflow.feature.auth.SignUpScreen
 import com.nathzramirez.thesisflow.feature.groups.createjoin.CreateJoinGroupScreen
 import com.nathzramirez.thesisflow.feature.groups.list.GroupListScreen
 import com.nathzramirez.thesisflow.feature.groups.overview.GroupOverviewScreen
@@ -75,7 +73,8 @@ fun ThesisFlowRoot(viewModel: MainViewModel) {
     AuroraBackground {
         when (session) {
             SessionState.Loading -> FullScreenLoading()
-            SessionState.SignedOut -> AuthNavHost(hasPendingInvite = pendingInvite != null)
+            // Sign-in in the cloud build, the people list in the local one: see src/cloud and src/local.
+            SessionState.SignedOut -> SignedOutNavHost(hasPendingInvite = pendingInvite != null)
             SessionState.NeedsOnboarding -> OnboardingNavHost()
             SessionState.ProfileUnavailable -> MessageScreen(
                 title = stringResource(R.string.profile_unavailable_title),
@@ -93,22 +92,6 @@ fun ThesisFlowRoot(viewModel: MainViewModel) {
                     onNotificationHandled = viewModel::onNotificationHandled,
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun AuthNavHost(hasPendingInvite: Boolean) {
-    val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = LoginRoute) {
-        composable<LoginRoute> {
-            LoginScreen(
-                hasPendingInvite = hasPendingInvite,
-                onCreateAccount = { navController.navigate(SignUpRoute) },
-            )
-        }
-        composable<SignUpRoute> {
-            SignUpScreen(onBack = { navController.popBackStack() })
         }
     }
 }

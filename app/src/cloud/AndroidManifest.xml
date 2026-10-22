@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The cloud build's additions to src/main/AndroidManifest.xml. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+
+        <activity android:name=".MainActivity">
+            <!--
+                Invite links: https://<inviteHost>/join/<code>. autoVerify makes them open
+                the app directly once hosting/public/.well-known/assetlinks.json is deployed.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="${inviteHost}"
+                    android:pathPrefix="/join/"
+                    android:scheme="https" />
+            </intent-filter>
+        </activity>
+
+        <!-- Receives FCM pushes; not exported, only Google Play services delivers to it. -->
+        <service
+            android:name=".notifications.ThesisFlowMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

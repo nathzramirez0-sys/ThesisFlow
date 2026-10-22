@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The local build's text. The first group replaces strings from src/main whose
+    wording only fits the cloud build; the rest is the people list, which only
+    this build has.
+-->
+<resources>
+    <string name="app_name">ThesisFlow Local</string>
+    <!-- Leaving goes back to the people list, not out of an account. -->
+    <string name="action_sign_out">Switch person</string>
+    <string name="profile_unavailable_body">This person\'s profile couldn\'t be found on this phone. Switch to someone else.</string>
+    <string name="join_group_note">Enter the 6-character code from the leader\'s Invite people card. Advisers use the adviser code.</string>
+    <string name="invite_replace_body">The current code will stop working.</string>
+
+    <string name="people_headline_start">Who\'s using</string>
+    <string name="people_headline_accent">ThesisFlow?</string>
+    <string name="people_subtitle">Everything stays on this phone, with no account or internet needed. Pick who you are, or add someone. Switch person any time from your profile.</string>
+    <string name="people_title">On this phone</string>
+    <string name="people_add">Add a person</string>
+    <string name="people_not_set_up">New person, not set up yet</string>
+    <string name="people_no_groups">Not in a group yet</string>
+    <!-- For example "Leader · Team SmartBin". -->
+    <string name="people_membership">%1$s · %2$s</string>
+    <string name="people_sample_title">Just looking around?</string>
+    <string name="people_sample_body">Add a sample thesis group with a leader, a member and an adviser, five chapters, tasks, feedback and six weeks of history. Then switch person to try each role.</string>
+    <string name="people_sample_action">Add the sample group</string>
+</resources>

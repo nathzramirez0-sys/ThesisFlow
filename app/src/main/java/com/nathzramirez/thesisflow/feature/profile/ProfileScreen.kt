@@ -78,11 +78,14 @@ fun ProfileScreen(
                 Avatar(name = state.displayName, photoUrl = state.photoUrl, size = 96.dp)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(state.displayName, style = MaterialTheme.typography.headlineSmall)
-                    Text(
-                        state.email,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    // People in the local build have no account, so no email.
+                    if (state.email.isNotBlank()) {
+                        Text(
+                            state.email,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
                 GlassCard(modifier = Modifier.fillMaxWidth()) {
                     ProfileForm(

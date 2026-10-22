@@ -491,12 +491,15 @@ private fun InviteRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                GhostButton(
-                    text = stringResource(R.string.invite_share),
-                    onClick = { shareInvite(context, groupName, active.code) },
-                    icon = Icons.Filled.Share,
-                    modifier = Modifier.weight(1f),
-                )
+                // The local build has no invite links: whoever joins is on this same phone.
+                if (!BuildConfig.LOCAL_MODE) {
+                    GhostButton(
+                        text = stringResource(R.string.invite_share),
+                        onClick = { shareInvite(context, groupName, active.code) },
+                        icon = Icons.Filled.Share,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
                 GhostButton(
                     text = stringResource(R.string.invite_copy),
                     onClick = {

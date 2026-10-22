@@ -4,7 +4,7 @@
 
 A thesis and group-project manager for college students in the Philippines. A thesis group, usually three to five students and an adviser, sees in one place who is doing what, which chapters are done, what the adviser said about the latest draft, and how many days are left before the defense.
 
-It's a native Android app written in Kotlin and Jetpack Compose. It works offline, and Firebase security rules enforce each role's permissions on the server.
+It's a native Android app written in Kotlin and Jetpack Compose, built two ways from one codebase. The **cloud build** runs on Firebase: it works offline, shares the group's work between phones, and its security rules enforce each role's permissions on the server. The **local build** keeps everything on one phone, with no account, internet or Firebase project, which makes it easy to try or demo ([see below](#try-the-local-build)).
 
 <p align="center">
   <img src="docs/screenshots/03-group-overview.jpg" width="250" alt="Group overview with defense countdown and progress ring">
@@ -95,7 +95,7 @@ flowchart LR
 | Module | What it holds |
 |---|---|
 | `domain/` | Pure Kotlin/JVM: models, validation, the permission rules (`ChapterRules`, `TaskRules`, `FeedbackRules`), use cases and repository interfaces. It has no Android or Firebase imports, so all of it is tested on the JVM. |
-| `data/` | Room entities and DAOs, Firestore mapping, repositories, the sync manager, the upload worker, push-token registration and settings. |
+| `data/` | Room entities and DAOs, Firestore mapping, repositories, the sync manager, the upload worker, push-token registration and settings. `src/cloud` and `src/local` hold each build's repository bindings; the local build's Room-only repositories are in `src/local`. |
 | `app/` | Compose screens, ViewModels, navigation, notifications, the reminder worker and the design system. |
 | `functions/` | Callables (`createInvite`, `joinGroup`, `deleteGroup`), triggers that write the activity feed and send pushes, clean-up of deleted chapters, tasks and feedback, and `syncMemberProfiles`. |
 | `firestore.rules`, `storage.rules` | The server-side copy of the permission table above, plus field validation. |
@@ -116,6 +116,8 @@ flowchart LR
 **Reminders are worked out on the phone.** A pure `ReminderPlanner` decides what's overdue, due today, due tomorrow or due soon. A daily WorkManager job runs it against Room, and a `sent_reminders` table makes sure each reminder fires only once. Reminders therefore work offline and need no server cron job. Pushes for things other people did are data-only FCM messages that carry their recipient, and the phone drops any push meant for someone else (for example, after the user switches accounts).
 
 **Stats count records, not effort.** The dashboard counts what ThesisFlow can see: tasks done, drafts uploaded, feedback resolved. Members are listed by name rather than ranked, and the screen says the numbers don't measure effort. Feedback turnaround uses the median, so one comment ignored over a semester break doesn't distort it.
+
+**Two builds, one set of screens.** A `backend` product flavor picks the build. The domain layer's repository interfaces were already the only thing screens and use cases saw, so the local build only binds different implementations in its own Hilt module: they read and write Room directly, and do on the phone what Cloud Functions do in the cloud build, writing the activity feed, checking invite codes and cleaning up after deletes. Room's schema is shared, so neither build migrates the other's data, and in the local build Firebase never starts at all.
 
 **ViewModels that take a route use assisted injection.** `SavedStateHandle.toRoute()` needs Android's `Bundle`, so a ViewModel that read its route that way couldn't be tested on the JVM. Hilt's assisted injection passes the route in as an object instead, so tests just construct it.
 
@@ -140,14 +142,30 @@ flowchart LR
 | Suite | What it covers | Run with |
 |---|---|---|
 | Unit tests (138) | Domain rules, validation, the reminder planner, stats, use cases, activity and push-payload parsing and the upload file store in `:data`, and ViewModels (with MockK and Turbine) | `./gradlew test` |
-| Room migrations (2) | Every schema from v1 to the latest, checked against the exported schemas, with a queued upload surviving the whole chain | `./gradlew :data:connectedDebugAndroidTest` (needs a device or emulator) |
+| Room migrations (2) | Every schema from v1 to the latest, checked against the exported schemas, with a queued upload surviving the whole chain | `./gradlew :data:connectedCloudDebugAndroidTest` (needs a device or emulator) |
 | Security rules (59) | Every collection the app writes, using the same fields, batches and server timestamps as the repositories, plus Storage uploads and deletes | `cd rules-tests && npm install && npm test` (needs Java 21+; starts and stops the Firestore and Storage emulators) |
 
 CI runs the unit tests, a debug build, the rules tests and the Cloud Functions build on every push and pull request.
 
-## Run it locally (no Firebase project needed)
+## Try the local build
 
-The debug build can talk to the Firebase Local Emulator Suite using a demo config with placeholder values. You need Android Studio, Node 22+ and Java 21+.
+No Firebase project, account or internet connection needed: everything is saved on the phone.
+
+```bash
+./gradlew :app:installLocalDebug
+```
+
+It installs as **ThesisFlow Local**, beside the cloud build. Instead of signing in, you pick who is using the phone from a people list:
+
+- **Add a person**, then set up their name, course and school.
+- **On a fresh install, add the sample group**: Team SmartBin, with a leader, a member and an adviser, five chapters, real PDF drafts, tasks, feedback and six weeks of history.
+- **Switch person** from the profile screen to play another role. The leader creates an invite code, and the person joining enters it, just as in the cloud build.
+
+Everything works except what needs a server: there are no invite links (codes still work) and no push notifications (daily reminders still do). The data lives only on this phone, so uninstalling the app deletes it.
+
+## Run the cloud build on the Firebase emulators
+
+No Firebase project needed here either. The debug build can talk to the Firebase Local Emulator Suite using a demo config with placeholder values. You need Android Studio, Node 22+ and Java 21+.
 
 1. Copy the demo config into place. If you've set up a real project, keep its `google-services.json` somewhere else first, because the emulators need the demo one:
 
@@ -168,7 +186,7 @@ The debug build can talk to the Firebase Local Emulator Suite using a demo confi
 3. Install the app on an Android emulator, pointed at the local emulators (it reaches your computer at `10.0.2.2`):
 
    ```bash
-   ./gradlew :app:installDebug -Pthesisflow.useEmulators=true
+   ./gradlew :app:installCloudDebug -Pthesisflow.useEmulators=true
    ```
 
 Email sign-up works against the emulators. Google sign-in and push notifications need a real project; FCM has no emulator, so the Functions emulator logs each push and its recipients instead of sending it. Daily reminders are worked out on the phone and work against the emulators.
@@ -217,7 +235,7 @@ Cloud Functions and Cloud Storage only run on the **Blaze** plan, and invites, u
 5. Set `thesisflow.inviteHost` in `gradle.properties` to `<project-id>.web.app`, put your signing certificate's SHA-256 in `hosting/public/.well-known/assetlinks.json`, and redeploy hosting so invite links open the app. Without the emulator flag, the build talks to the real project:
 
    ```bash
-   ./gradlew :app:installDebug
+   ./gradlew :app:installCloudDebug
    ```
 
 ## Credits
