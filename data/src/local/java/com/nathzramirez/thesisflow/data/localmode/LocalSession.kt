@@ -1,6 +1,7 @@
 package com.nathzramirez.thesisflow.data.localmode
 
 import android.content.Context
+import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
@@ -33,17 +34,19 @@ internal data class LocalInvite(
 /**
  * Who is using the local build right now, and the group invite codes. Choosing
  * a person here is the local build's sign-in. Both live in their own DataStore
- * file, which the class creates itself: DataStore allows one instance per file,
- * and this class is a singleton.
+ * file, which the app's constructor creates: DataStore allows one instance per
+ * file, and this class is a singleton. Tests pass a store of their own.
  */
 @Singleton
-internal class LocalSession @Inject constructor(
-    @ApplicationContext context: Context,
-) {
-    private val store = PreferenceDataStoreFactory.create(
-        corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
-        scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
-        produceFile = { context.preferencesDataStoreFile("local_session") },
+internal class LocalSession(private val store: DataStore<Preferences>) {
+
+    @Inject
+    constructor(@ApplicationContext context: Context) : this(
+        PreferenceDataStoreFactory.create(
+            corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+            scope = CoroutineScope(Dispatchers.IO + SupervisorJob()),
+            produceFile = { context.preferencesDataStoreFile("local_session") },
+        ),
     )
 
     /** The person using the app, or null while the people list is showing. */

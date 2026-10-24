@@ -141,8 +141,9 @@ flowchart LR
 
 | Suite | What it covers | Run with |
 |---|---|---|
-| Unit tests (138) | Domain rules, validation, the reminder planner, stats, use cases, activity and push-payload parsing and the upload file store in `:data`, and ViewModels (with MockK and Turbine) | `./gradlew test` |
+| Unit tests (142) | Domain rules, validation, the reminder planner, stats, use cases, activity and push-payload parsing and the upload file store in `:data`, and ViewModels (with MockK and Turbine). The shared ones run once per build; 4 cover the local build's people list | `./gradlew test` |
 | Room migrations (2) | Every schema from v1 to the latest, checked against the exported schemas, with a queued upload surviving the whole chain | `./gradlew :data:connectedCloudDebugAndroidTest` (needs a device or emulator) |
+| Local build's data layer (26) | Its repositories on a real in-memory Room database: per-person groups and roles, invite codes (revoked, expired, full group), draft versions, feedback, deletes that take files with them, the people list and the sample group | `./gradlew :data:connectedLocalDebugAndroidTest` (needs a device or emulator) |
 | Security rules (59) | Every collection the app writes, using the same fields, batches and server timestamps as the repositories, plus Storage uploads and deletes | `cd rules-tests && npm install && npm test` (needs Java 21+; starts and stops the Firestore and Storage emulators) |
 
 CI runs the unit tests, a debug build, the rules tests and the Cloud Functions build on every push and pull request.

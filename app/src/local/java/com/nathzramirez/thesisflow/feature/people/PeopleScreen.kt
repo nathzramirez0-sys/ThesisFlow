@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -72,13 +73,13 @@ fun PeopleScreen(viewModel: PeopleViewModel = hiltViewModel()) {
                     headlineStart = stringResource(R.string.people_headline_start),
                     headlineAccent = stringResource(R.string.people_headline_accent),
                     subtitle = stringResource(R.string.people_subtitle),
-                    modifier = Modifier.widthIn(max = 480.dp),
+                    modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
                 )
             }
             val people = state.people.orEmpty()
             if (people.isNotEmpty()) {
                 item {
-                    Column(Modifier.widthIn(max = 480.dp)) {
+                    Column(Modifier.widthIn(max = 480.dp).fillMaxWidth()) {
                         Spacer(Modifier.height(8.dp))
                         HudLabel(stringResource(R.string.people_title))
                     }
@@ -89,7 +90,7 @@ fun PeopleScreen(viewModel: PeopleViewModel = hiltViewModel()) {
                     person = person,
                     enabled = !state.isBusy,
                     onClick = { viewModel.choose(person.uid) },
-                    modifier = Modifier.widthIn(max = 480.dp),
+                    modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
                 )
             }
             item {
@@ -98,7 +99,7 @@ fun PeopleScreen(viewModel: PeopleViewModel = hiltViewModel()) {
                     onClick = viewModel::addPerson,
                     icon = Icons.Filled.Add,
                     loading = state.isBusy,
-                    modifier = Modifier.widthIn(max = 480.dp),
+                    modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
                 )
             }
             // Offered on a fresh install only, so it can't add a second Team SmartBin.
@@ -107,7 +108,7 @@ fun PeopleScreen(viewModel: PeopleViewModel = hiltViewModel()) {
                     SampleGroupCard(
                         enabled = !state.isBusy,
                         onAdd = viewModel::addSampleGroup,
-                        modifier = Modifier.widthIn(max = 480.dp),
+                        modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth(),
                     )
                 }
             }

@@ -70,8 +70,10 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
 
-    // Migration tests run on a device or emulator: ./gradlew :data:connectedCloudDebugAndroidTest
+    // On-device tests: Room migrations (both builds) and the local build's repositories,
+    // e.g. ./gradlew :data:connectedLocalDebugAndroidTest
     androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
 }

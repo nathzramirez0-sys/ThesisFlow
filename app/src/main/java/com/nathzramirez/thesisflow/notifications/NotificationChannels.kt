@@ -3,6 +3,7 @@ package com.nathzramirez.thesisflow.notifications
 import android.content.Context
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
+import com.nathzramirez.thesisflow.BuildConfig
 import com.nathzramirez.thesisflow.R
 
 /**
@@ -23,13 +24,20 @@ object NotificationChannels {
                 .setDescription(context.getString(description))
                 .build()
 
-        NotificationManagerCompat.from(context).createNotificationChannelsCompat(
+        val reminders = channel(
+            REMINDERS, NotificationManagerCompat.IMPORTANCE_DEFAULT, R.string.channel_reminders, R.string.channel_reminders_body,
+        )
+        // The local build has no pushes, so only the reminders channel would ever be used.
+        val channels = if (BuildConfig.LOCAL_MODE) {
+            listOf(reminders)
+        } else {
             listOf(
                 channel(REVIEWS, NotificationManagerCompat.IMPORTANCE_HIGH, R.string.channel_reviews, R.string.channel_reviews_body),
                 channel(TASKS, NotificationManagerCompat.IMPORTANCE_DEFAULT, R.string.channel_tasks, R.string.channel_tasks_body),
-                channel(REMINDERS, NotificationManagerCompat.IMPORTANCE_DEFAULT, R.string.channel_reminders, R.string.channel_reminders_body),
+                reminders,
                 channel(GROUP, NotificationManagerCompat.IMPORTANCE_DEFAULT, R.string.channel_group, R.string.channel_group_body),
-            ),
-        )
+            )
+        }
+        NotificationManagerCompat.from(context).createNotificationChannelsCompat(channels)
     }
 }

@@ -11,6 +11,9 @@
     <string name="profile_unavailable_body">This person\'s profile couldn\'t be found on this phone. Switch to someone else.</string>
     <string name="join_group_note">Enter the 6-character code from the leader\'s Invite people card. Advisers use the adviser code.</string>
     <string name="invite_replace_body">The current code will stop working.</string>
+    <!-- No pushes in this build: notifications are the daily deadline reminder only. -->
+    <string name="notifications_prompt_title">Never miss a deadline</string>
+    <string name="notifications_prompt_body">Turn on notifications for a daily reminder of the tasks, chapters and defenses coming up.</string>
 
     <string name="people_headline_start">Who\'s using</string>
     <string name="people_headline_accent">ThesisFlow?</string>
